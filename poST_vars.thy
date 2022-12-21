@@ -36,7 +36,7 @@ definition basics_to_array_interval :: "basic_post_type \<Rightarrow> basic_post
 "basics_to_array_interval var1 var2 = 
   (case (basic_post_type_to_bptint var1,basic_post_type_to_bptint var2) of 
     ((basic_post_type.Int val1), (basic_post_type.Int val2)) \<Rightarrow> array_interval.Int val1 val2)"
-
+(*
 translations
   (type) "array_spec" <= (type) "array_interval * basic_post_type"
   (type) "array_spec_init" <= (type) "array_spec * (array_init option)"
@@ -46,5 +46,5 @@ translations
   (type) "direct_var" <= (type) "direct_type_perfix * direct_size_prefix * (int list)"
  (* (type) "global_var_init_decl" <= (type) "symbolic_var  * direct_var * basic_post_type"*)
   (type) "global_var_decl" <= (type) "is_const * ((symbolic_var, all_var_init_decl) fmap)"
-
+*)
 end

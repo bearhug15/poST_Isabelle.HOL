@@ -1,5 +1,6 @@
 theory poSTVM
-  imports poST_model
+  imports poST_model "HOL-Data_Structures.Queue_2Lists"
+
 begin
 
 type_synonym current_time = "time"
@@ -8,12 +9,12 @@ type_synonym process_state = "(proc_var list) * state_name * state_name * proc_s
 type_synonym program_state = "((process_name,process_state) fmap) * process_name"
 datatype model_state = ST "(global_var_decl list)"  "((program_name,program_state) fmap * program_name)"  "(function_block_decl list)"  "(function_decl list)"
 
-definition find_var_by_name :: "symbolic_var  \<Rightarrow>(symbolic_var, var_init_decl) fmap \<Rightarrow> (symbolic_var * var_init_decl) option " where
-"find_var_by_name var val = (case (fmlookup val var) of None \<Rightarrow> None | Some v \<Rightarrow> Some (var, v))"
+definition find_var_by_name :: "symbolic_var  \<Rightarrow>(symbolic_var, var_init_decl) fmap \<Rightarrow> var_init_decl option" where
+"find_var_by_name var val =(fmlookup val var) "
+(*"find_var_by_name var val = (case (fmlookup val var) of None \<Rightarrow> None | Some v \<Rightarrow> Some (var, v))"*)
 
-fun get_var_by_name :: "(proc_var list) \<Rightarrow>  symbolic_var \<Rightarrow> (symbolic_var * var_init_decl) option" where
-  "get_var_by_name [] _ = None" |
-  "get_var_by_name (x#yz) var_name  =(let res = (case x of proc_var.ProcessVar var \<Rightarrow> None |
+fun get_var_by_name :: "(proc_var list) \<Rightarrow>  symbolic_var \<Rightarrow>  var_init_decl option" where
+  "get_var_by_name (x#yz) var_name  = (let res = (case x of proc_var.ProcessVar var \<Rightarrow> None |
                                           proc_var.Var (is_const,  var) \<Rightarrow> find_var_by_name var_name var |
                                           proc_var.InVar var \<Rightarrow> find_var_by_name var_name var | 
                                           proc_var.OutVar var \<Rightarrow> find_var_by_name var_name var | 
@@ -73,123 +74,106 @@ fun set_symbvar_in_cur_prog :: "model_state \<Rightarrow> symbolic_var \<Rightar
   (case (fmlookup ps_map p_name) of
     Some(p_state) \<Rightarrow> (ST global_var_decl_list ((fmupd p_name p_state ps_map), p_name) function_block_decl_list function_decl_list))"
 
-
-fun expr_processing :: "model_state \<Rightarrow> expr \<Rightarrow>(model_state * basic_post_type) " and
-  prim_expr_processing :: "model_state \<Rightarrow> prim_expr \<Rightarrow>(model_state * basic_post_type)" and
-  initialize_array :: "model_state \<Rightarrow> array_spec_init \<Rightarrow> (model_state * array_spec_init)"
+datatype buff = Buff nat nat
+fun buff_fun :: "buff \<Rightarrow> nat"
   where
-  "expr_processing st (Unary (UnaryExpr unary_option prim_exp)) =  (case unary_option of 
-          Some op \<Rightarrow> (st, (basic_post_type.Nat 0)) | 
-          None \<Rightarrow> prim_expr_processing st prim_exp)" |
-  "expr_processing st (Binary bin_op exp1 exp2) = (case bin_op of 
-    binary_op.And \<Rightarrow> 
-      (let (new_st1, var1) = (expr_processing st exp1);
-           (new_st2, var2) = (expr_processing new_st1 exp2) in
-           (new_st2,basic_post_type.Bool (basic_post_type_and var1 var2))) |
-    binary_op.Or \<Rightarrow> 
-      (let (new_st1, var1) = (expr_processing st exp1);
-           (new_st2, var2) = (expr_processing new_st1 exp2) in
-           (new_st2,basic_post_type.Bool (basic_post_type_or var1 var2))) |
-    binary_op.Less \<Rightarrow> 
-      (let (new_st1, var1) = (expr_processing st exp1);
-           (new_st2, var2) = (expr_processing new_st1 exp2) in
-           (new_st2,basic_post_type.Bool (basic_post_type_less var1 var2))) |
-    binary_op.More \<Rightarrow> 
-      (let (new_st1, var1) = (expr_processing st exp1);
-           (new_st2, var2) = (expr_processing new_st1 exp2) in
-           (new_st2,basic_post_type.Bool (basic_post_type_more var1 var2))) |
-    binary_op.LessEq \<Rightarrow> 
-      (let (new_st1, var1) = (expr_processing st exp1);
-           (new_st2, var2) = (expr_processing new_st1 exp2) in
-           (new_st2,basic_post_type.Bool (basic_post_type_lesseq var1 var2))) |
-    binary_op.MoreEq \<Rightarrow> 
-      (let (new_st1, var1) = (expr_processing st exp1);
-           (new_st2, var2) = (expr_processing new_st1  exp2) in
-           (new_st2,basic_post_type.Bool (basic_post_type_moreeq var1 var2))) |
-    binary_op.Eq \<Rightarrow> 
-      (let (new_st1, var1) = (expr_processing st exp1);
-           (new_st2, var2) = (expr_processing new_st1 exp2) in
-           (new_st2,basic_post_type.Bool (basic_post_type_eq var1 var2))) |
-    binary_op.NotEq \<Rightarrow> 
-      (let (new_st1, var1) = (expr_processing st exp1);
-           (new_st2, var2) = (expr_processing new_st1 exp2) in
-           (new_st2,basic_post_type.Bool (basic_post_type_noteq var1 var2))) |
-    binary_op.Xor \<Rightarrow> 
-      (let (new_st1, var1) = (expr_processing st exp1);
-           (new_st2, var2) = (expr_processing new_st1 exp2) in
-           (new_st2,basic_post_type.Bool (basic_post_type_xor var1 var2))) |
-    binary_op.Sum \<Rightarrow> 
-      (let (new_st1, var1) = (expr_processing st exp1);
-           (new_st2, var2) = (expr_processing new_st1 exp2) in
-           (new_st2,basic_post_type_sum var1 var2)) |
-    binary_op.Sub \<Rightarrow> 
-      (let (new_st1, var1) = (expr_processing st exp1);
-           (new_st2, var2) = (expr_processing new_st1 exp2) in
-           (new_st2,basic_post_type_sub var1 var2)) |
-    binary_op.Mul \<Rightarrow> 
-      (let (new_st1, var1) = (expr_processing st exp1);
-           (new_st2, var2) = (expr_processing new_st1 exp2) in
-           (new_st2,basic_post_type_mul var1 var2)) |
-    binary_op.Div \<Rightarrow> 
-      (let (new_st1, var1) = (expr_processing st exp1);
-           (new_st2, var2) = (expr_processing new_st1 exp2) in
-           (new_st2,basic_post_type_div var1 var2)) |
-    binary_op.Mod \<Rightarrow> 
-      (let (new_st1, var1) = (expr_processing st exp1);
-           (new_st2, var2) = (expr_processing new_st1 exp2) in
-           (new_st2,basic_post_type_mod var1 var2)))" |
-  "prim_expr_processing st (prim_expr.Const c) = (st , const_to_basic c)" |
-  (*Add other case branches? *)
-  "prim_expr_processing st (prim_expr.SymbolicVar var_name) = 
-    (let var_list = get_cur_var_list st;
-        buff = (get_var_by_name var_list var_name) in 
-      (case buff of 
-        None \<Rightarrow> (st, (basic_post_type.Nat 0)) | 
-        Some (var_name,init) \<Rightarrow> 
-          (case init of 
-            (var_init_decl.Simple (value, exp_option))\<Rightarrow> 
-              (let (st,new_value) = (case exp_option of 
-                                      None =>(st, value) | 
-                                      Some(exp) \<Rightarrow> (let (st,res) = expr_processing st exp;
-                                                        new_st = (set_symbvar_in_cur_prog st var_name (var_init_decl.Simple (res,None)))  
-                                                    in (new_st, res) ))
-                in (st,new_value))) ))" |
-  "prim_expr_processing st (prim_expr.ArrayVar (array_var.ArrayVar var_name exp)) = 
-    (let var_list = get_cur_var_list st 
-      in (case (get_var_by_name var_list var_name) of 
-        None \<Rightarrow> (st, (basic_post_type.Nat 0)) |
-        Some (var, init)\<Rightarrow> (case init of 
-          var_init_decl.Array(array_init)\<Rightarrow> 
-            (let (new_st1,((ar_interval,values),expr_list_option)) = initialize_array st array_init;
-                 new_st2 = set_symbvar_in_cur_prog  new_st1 var_name (var_init_decl.Array ((ar_interval,values), expr_list_option));
-                 new_var_list = set_symbvar_in_var_list var_list;
-                 (new_st3, pos) = expr_processing new_st2 exp
-              in (case pos of
-                    basic_post_type.Nat val \<Rightarrow> (st, (nth values val)) |
-                    basic_post_type.Int val \<Rightarrow> (st, (nth values (nat val))))))))" |
-  "prim_expr_processing st (prim_expr.ProcStatEpxr (proc_name, proc_stat)) = 
-    (let (proc_var_list,st_name,start_st_name,cur_proc_stat,cur_time) = get_cur_proc_state (get_cur_prog_state st);
-      comp = proc_status_is cur_proc_stat proc_stat in
-       (st, (basic_post_type.Bool comp)) )" |
-  "prim_expr_processing st (prim_expr.Expression exp) = (expr_processing st exp)" |
-  (*To Do*)
-  "prim_expr_processing st (prim_expr.FunctionCall (function_call.FuncCall f_name param_list)) = (st, (basic_post_type.Nat 0))" |
-  (*something wrong with map*)
-  "initialize_array st ((ar_interval,values), array_init_option) =
-    (let new_ar_interval = (case ar_interval of 
-                              (array_interval.Expr exp1 exp2) \<Rightarrow>(let (new_st1,val1) = (expr_processing st exp1);
-                                                                     (new_st2,val2) = (expr_processing st exp2) in
-                                                                      (basics_to_array_interval val1 val2)) | 
-                              (array_interval.Int int1 int2) \<Rightarrow> (array_interval.Int int1 int2)) 
-      in (case array_init_option of
-            None \<Rightarrow> (st, ((new_ar_interval,values), None)) |
-            Some(expr_list) \<Rightarrow>(st, ((new_ar_interval,
-                                    (map
-                                      (\<lambda>exp. (let (st,res) = (expr_processing st exp) in res)) 
-                                      expr_list):: (basic_post_type list)) , 
-                                    None)))) "
+"buff_fun value = (let (val1, val2) = (case value of (Buff val1 val2) \<Rightarrow> (val1,val2)) in val1)"
+
+definition unary_op_exec :: "unary_op => basic_post_type \<Rightarrow> basic_post_type" where
+"unary_op_exec op var = (case op of unary_op.Not \<Rightarrow> (basic_post_type_not var) | unary_op.Minus \<Rightarrow> (basic_post_type_minus var))"
+
+definition binary_op_exec :: "binary_op \<Rightarrow> basic_post_type \<Rightarrow> basic_post_type \<Rightarrow> basic_post_type" where
+"binary_op_exec op var1 var2 = 
+  (case op of 
+    binary_op.And \<Rightarrow> basic_post_type.Bool(basic_post_type_and var1 var2)|
+ binary_op.Or \<Rightarrow> basic_post_type.Bool(basic_post_type_or var1 var2)|
+    binary_op.Xor \<Rightarrow> basic_post_type.Bool(basic_post_type_xor var1 var2) | 
+    binary_op.Eq \<Rightarrow> basic_post_type.Bool(basic_post_type_or var1 var2)| 
+    binary_op.NotEq \<Rightarrow>basic_post_type.Bool(basic_post_type_noteq var1 var2)| 
+    binary_op.Less \<Rightarrow>basic_post_type.Bool(basic_post_type_less var1 var2)| 
+    binary_op.More \<Rightarrow>basic_post_type.Bool(basic_post_type_more var1 var2)| 
+    binary_op.LessEq \<Rightarrow>basic_post_type.Bool(basic_post_type_lesseq var1 var2)| 
+    binary_op.MoreEq \<Rightarrow>basic_post_type.Bool(basic_post_type_moreeq var1 var2)| 
+    binary_op.Sum \<Rightarrow> basic_post_type_sum var1 var2| 
+    binary_op.Sub \<Rightarrow> basic_post_type_sub var1 var2| 
+    binary_op.Mul \<Rightarrow> basic_post_type_mul var1 var2| 
+    binary_op.Div \<Rightarrow> basic_post_type_div var1 var2| 
+    binary_op.Mod \<Rightarrow> basic_post_type_mod var1 var2)"
 
 datatype statement_result = Break | Continue | Exit | Reset | NextState
+datatype point_type = Break | Result | Exit
+datatype process_mod = Restart | Stop | Error
+
+
+datatype stack_op = 
+  Unary "unary_op option" | 
+  Binary binary_op | 
+  Value basic_post_type | 
+  Assign symbolic_var | 
+  ArrayAssign symbolic_var |
+  Get symbolic_var |
+  CheckProcStat process_name proc_status |
+  FunctionCall func_name "param_assign list" |
+  FunctionBlockCall func_block_name "param_assign list" |
+  StatementResult statement_result |
+  SetPoint point_type |
+  GoPoint point_type |
+  SetState "state_name option" |
+  ProcessStatement "process_name option" process_mod |
+  StatementList "stack_op queue" |
+  IfStatement "stack_op queue" |
+  CaseStatement "stack_op queue" |
+  WhileStatement "stack_op queue" |
+  ResetTimer |
+  Blanck
+
+type_synonym stack = "stack_op queue"
+
+definition enqueue :: "'a \<Rightarrow> 'a queue" where
+"enqueue val = ([val],[])"
+
+definition queue_concat :: "'a queue \<Rightarrow> 'a queue \<Rightarrow> 'a queue" where
+"queue_concat q1 q2 = ((list q1) @ (list q2),[])"
+
+definition list_to_queue :: "'a list \<Rightarrow> 'a queue" where
+"list_to_queue l = (l,[])"
+
+definition self :: "'a queue \<Rightarrow> 'a queue" where
+"self q = q"
+
+primrec queue_list_to_queue :: "('a queue) list \<Rightarrow>'a queue" where
+"queue_list_to_queue [] = ([],[])  " |
+"queue_list_to_queue (x#other) = queue_concat x (queue_list_to_queue other)"
+
+fun stack_expr :: "expr \<Rightarrow> stack" and
+  stack_prim_expr :: "prim_expr \<Rightarrow> stack" where
+(*To do Unary branch*)
+"stack_expr exp = 
+  (case exp of 
+    (expr.Unary (UnaryExpr unary_option prim_exp)) \<Rightarrow> (queue_concat (enqueue (stack_op.Unary unary_option)) (stack_prim_expr prim_exp)) |
+    (expr.Binary bin_op exp1 exp2) \<Rightarrow>(queue_concat (queue_concat (enqueue (stack_op.Binary bin_op)) (stack_expr exp1)) (stack_expr exp2)))" |
+"stack_prim_expr (prim_expr.Const c) = enqueue (stack_op.Value (const_to_basic c))" |
+"stack_prim_expr (prim_expr.SymbolicVar var_name) = enqueue (stack_op.Get var_name)" |
+"stack_prim_expr (prim_expr.ArrayVar (array_var.ArrayVar var_name exp)) = queue_concat (enqueue (stack_op.Get var_name)) (stack_expr exp)" |
+"stack_prim_expr (prim_expr.ProcStatEpxr (proc_name, proc_stat)) = enqueue (stack_op.CheckProcStat proc_name proc_stat)" |
+"stack_prim_expr (prim_expr.Expression exp) = stack_expr exp" |
+"stack_prim_expr (prim_expr.FunctionCall (function_call.FuncCall f_name param_assign_list)) = enqueue (stack_op.FunctionCall f_name param_assign_list)"
+
+definition expr_ex1 :: "expr" where
+"expr_ex1 = expr.Binary binary_op.Sum 
+                        (expr.Binary binary_op.Mul 
+                                     (expr.Unary (UnaryExpr None (prim_expr.Const (const.Nat 1)))) 
+                                     (expr.Unary (UnaryExpr None (prim_expr.SymbolicVar ''var1'')))) 
+                        (expr.Unary (UnaryExpr (Some unary_op.Minus) 
+                                               (prim_expr.ArrayVar (array_var.ArrayVar 
+                                                                    ''arvar1''
+                                                                    (expr.Unary (UnaryExpr None (prim_expr.Const (const.Int 1)))))))) "
+value "stack_expr (expr_ex1)"
+
+(**)
+definition initialize_array :: "[model_state, symbolic_var] \<Rightarrow> model_state" where
+"initialize_array st var_name= st"
+
 
 fun stop_process :: "model_state \<Rightarrow> process_name \<Rightarrow> model_state" where
 "stop_process (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) target_proc_name =
@@ -325,83 +309,93 @@ fun set_state :: "model_state \<Rightarrow> state_name \<Rightarrow> model_state
         function_block_decl_list 
         function_decl_list))"
 
-fun statement_processing :: "model_state \<Rightarrow> statement \<Rightarrow> model_state * statement_result" and
-  statement_list_processing :: "model_state \<Rightarrow> statement_list \<Rightarrow> model_state * statement_result" and
-  if_processing :: "model_state \<Rightarrow> (expr * statement_list) list \<Rightarrow> statement_list option \<Rightarrow> model_state * statement_result" and
-  case_processing :: "model_state \<Rightarrow> basic_post_type \<Rightarrow> case_element list \<Rightarrow> statement_list option \<Rightarrow> model_state * statement_result"
-  where
-"statement_processing st (statement.AssignSt (var,exp)) =
-  (let (new_st,new_value) = expr_processing st exp 
-    in (case var of
-        (common_var.SymbolicVar var_name) \<Rightarrow> 
-          (set_symbvar_in_cur_prog new_st var_name (var_init_decl.Simple (new_value,None)),statement_result.Continue) |
-        (common_var.Array (array_var.ArrayVar var_name exp)) \<Rightarrow> 
-          (let (new_st,pos) = expr_processing new_st exp;
-               (var_option) = get_var_by_name (get_cur_var_list new_st) var_name
-           in (case var_option of 
-                Some(var_name, init_decl) \<Rightarrow>
-                  (case init_decl of 
-                    var_init_decl.Array(array_init) \<Rightarrow>
-                       (let (new_st,((ar_interval,values),expr_list_option)) = initialize_array new_st array_init;
-                             actual_pos = (case (pos,ar_interval) of 
-                                            (basic_post_type.Nat val,array_interval.Int start end) \<Rightarrow> 
-                                              (nat ((int val) - start)) |
-                                            (basic_post_type.Int val,array_interval.Int start end) \<Rightarrow> 
-                                              (nat (val - start)));
-                             new_values = (list_update values actual_pos new_value ) in
-                          (set_symbvar_in_cur_prog new_st var_name (var_init_decl.Array ((ar_interval,new_values),expr_list_option)),statement_result.Continue))) )))) " |
-(*"statement_processing st (statement.FBInvocation (fb_name,param_assign_list)) = st" |*)
-"statement_processing st (statement.Return) = (st, statement_result.Break)" |
-"statement_processing st (statement.Exit) = (st, statement_result.Exit)" |
-"statement_processing st (statement.ProcessSt proc_statement) =
-  (case proc_statement of 
-    process_statement.Start(process_name_option) \<Rightarrow> 
-      (case process_name_option of 
-        None \<Rightarrow> (reset_same_process st,statement_result.Continue) |
-        Some(proc_name) \<Rightarrow> (reset_process st proc_name,statement_result.Reset)) |
-    process_statement.Stop(process_name_option) \<Rightarrow>
-      (case process_name_option of 
-        None \<Rightarrow> (stop_same_process st,statement_result.Continue) |
-        Some(proc_name) \<Rightarrow> (stop_process st proc_name,statement_result.Reset)) |
-    process_statement.Error(process_name_option) \<Rightarrow> 
-      (case process_name_option of 
-        None \<Rightarrow> (error_same_process st,statement_result.Continue) |
-        Some(proc_name) \<Rightarrow> (error_process st proc_name,statement_result.Reset)))" |
-"statement_processing st (statement.SetStateSt state_name_option) =
-  (case state_name_option of 
-    None \<Rightarrow> (st, statement_result.NextState) |
-    Some(st_name) \<Rightarrow> (set_state st st_name, statement_result.Continue))" |
-"statement_processing st (statement.ResetSt) = (st, statement_result.Reset)" |
-
-"statement_processing st (statement.SelectSt (select_statement.IfSt (if_statement.IfSt if_then_list else_option ))) = 
-  if_processing st if_then_list else_option" |
-
-"statement_processing st (statement.SelectSt (select_statement.CaseSt (case_statement.CaseSt exp case_then_list else_option))) =
-  (let (new_st, val) = expr_processing st exp
-    in case_processing st val case_then_list else_option) " |
-
-"statement_list_processing st (StList []) = (st,statement_result.Continue)" |
-
-"statement_list_processing st (StList (elem#other)) = 
-  (let (new_st,st_result) = statement_processing st elem 
-    in (case st_result of
-        statement_result.Continue \<Rightarrow> (statement_list_processing new_st (StList other))|
-        statement_result.Break \<Rightarrow> (statement_list_processing new_st (StList other))|
-        _ \<Rightarrow> (new_st,st_result)))" | 
-"if_processing st [] else_option = 
- (case else_option of
-    None \<Rightarrow> (st,statement_result.Continue) |
-    Some(st_list) \<Rightarrow> statement_list_processing st st_list)"|
-(*To Do*)
-"if_processing st ((exp,st_list)#other) else_option = 
-(st,statement_result.Continue)"|
-(*To Do*)
-"statement_processing st (statement.IterSt iter_st) = (st,statement_result.Continue) "
-
+primrec nat_to_values_stack :: "nat list \<Rightarrow> stack" where
+"nat_to_values_stack [] = enqueue (stack_op.Blanck) " |
+"nat_to_values_stack (v#other) = queue_concat (enqueue (stack_op.Value (basic_post_type.Nat v))) (nat_to_values_stack other)"
 (*
-fun state_processing :: "(proc_var list) state_decl \<Rightarrow> (proc_var list) process_vars"
-  where
+primrec for_to_while_statement :: "for_statement \<Rightarrow>statement *  while_statement * statement" where
+"for_to_while_statement (for_statement.ForSt var_name (exp1,exp2,exp_option) st_list) = 
+  (let st1 = (stat))"
 *)
+fun stack_statement :: "statement \<Rightarrow> stack" and
+  stack_statement_list:: "statement list \<Rightarrow>stack" and
+  stack_if_statements :: "(expr * statement_list) list \<Rightarrow> stack" and
+  stack_case_statements :: "case_element list \<Rightarrow> stack"  where
+"stack_statement (statement.AssignSt (var, exp)) = 
+  (let value_queue = (stack_expr exp)
+  in (case var of 
+      (common_var.SymbolicVar var_name) \<Rightarrow> queue_concat (enqueue (stack_op.Assign var_name)) value_queue|
+      (common_var.Array (array_var.ArrayVar var_name exp)) \<Rightarrow>queue_concat (queue_concat (enqueue (stack_op.Assign var_name)) (stack_expr exp)) value_queue ))" |
+"stack_statement (statement.Return) = enqueue (stack_op.GoPoint point_type.Result)" |
+"stack_statement (statement.Exit) = enqueue (stack_op.GoPoint point_type.Exit)" |
+"stack_statement (statement.ProcessSt proc_statement) = 
+  (case proc_statement of
+     process_statement.Start(process_name_option) \<Rightarrow> 
+      enqueue (stack_op.ProcessStatement process_name_option process_mod.Restart) |
+    process_statement.Stop(process_name_option) \<Rightarrow>
+      enqueue (stack_op.ProcessStatement process_name_option process_mod.Stop) |
+    process_statement.Error(process_name_option) \<Rightarrow> 
+      enqueue (stack_op.ProcessStatement process_name_option process_mod.Error))" |
+"stack_statement (statement.SetStateSt state_name_option) = enqueue (stack_op.SetState state_name_option)" |
+"stack_statement (statement.SelectSt (select_statement.IfSt (if_statement.IfSt if_then_list else_option ))) = 
+  (let if_queue = (stack_if_statements if_then_list) in 
+    (queue_concat 
+      (enqueue (stack_op.SetPoint point_type.Break)) 
+        (case else_option of None \<Rightarrow> if_queue |
+          Some(statement_list.StList st_list) \<Rightarrow> queue_concat if_queue (stack_statement_list st_list))))" |
+"stack_statement_list [] = enqueue (stack_op.Blanck)" |
+"stack_statement_list (st#other) = queue_concat (stack_statement st) (stack_statement_list other)" |
+"stack_if_statements [] = enqueue (stack_op.Blanck)" |
+"stack_if_statements (ifs#other) = 
+  queue_concat 
+    (let (exp,st_list) = ifs 
+      in (case st_list of (statement_list.StList st_list) \<Rightarrow>  
+          (queue_concat 
+            (enqueue (stack_op.IfStatement (stack_expr exp))) 
+            (enqueue (stack_op.StatementList 
+                      (queue_concat 
+                        (stack_statement_list st_list)
+                        (enqueue (stack_op.GoPoint point_type.Break))))))) )
+    (queue_concat 
+      (stack_if_statements other)
+      (enqueue (stack_op.SetPoint point_type.Break)))" |
+"stack_statement (statement.SelectSt (select_statement.CaseSt (case_statement.CaseSt exp case_then_list else_option))) =
+  queue_concat
+    (enqueue (stack_op.CaseStatement (stack_expr exp)))
+    (queue_concat
+      (case else_option of None \<Rightarrow> (stack_case_statements case_then_list) |
+        Some(statement_list.StList st_list) \<Rightarrow> queue_concat (stack_case_statements case_then_list) (stack_statement_list st_list))
+      (enqueue (stack_op.SetPoint point_type.Break)))" |
+"stack_case_statements [] = enqueue (stack_op.Blanck)" |
+"stack_case_statements (cas#other) = 
+  (case cas of (case_element.CaseElem nat_list (statement_list.StList st_list)) \<Rightarrow> 
+    queue_concat
+      (queue_concat
+        (nat_to_values_stack nat_list)
+        (enqueue (stack_op.StatementList 
+                    (queue_concat
+                      (stack_statement_list st_list)
+                        (enqueue (stack_op.GoPoint point_type.Break))))))
+      (stack_case_statements other))" |
+(*"stack_statement (statement.IterSt (iter_statement.ForSt (for_statement.ForSt var_name (exp1,exp2,exp_option) st_list))) = " |*)
+"stack_statement (statement.IterSt (iter_statement.WhileSt (while_statement.WhileSt exp (statement_list.StList st_list)))) = 
+ queue_list_to_queue
+   [(enqueue (stack_op.WhileStatement (stack_expr exp))),
+    (enqueue (stack_op.StatementList (stack_statement_list st_list))),
+    (enqueue (stack_op.SetPoint point_type.Break))]" |
+"stack_statement (statement.IterSt (iter_statement.RepeatSt (repeat_statement.RepeatSt (statement_list.StList st_list) exp))) = 
+  (let st_queue = (enqueue (stack_op.StatementList (stack_statement_list st_list))) 
+    in queue_list_to_queue
+   [st_queue,
+    (enqueue (stack_op.WhileStatement (stack_expr exp))),
+    st_queue,
+    (enqueue (stack_op.SetPoint point_type.Break))])" |
+"stack_statement (statement.ResetSt) = enqueue (stack_op.ResetTimer)" |
+"stack_statement (FBInvocation (fb_name, param_assign_list)) = enqueue (stack_op.FunctionBlockCall fb_name param_assign_list)"
+
+
+
+
 (*
 definition get_val :: "(string, nat) fmap" where
   "get_val = fmempty"

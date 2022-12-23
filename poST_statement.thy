@@ -25,17 +25,16 @@ datatype statement = AssignSt assign_statement |
                      SelectSt select_statement |
                      IterSt iter_statement
   and statement_list = StList "statement list"
-  and select_statement = IfSt if_statement | 
-                         CaseSt case_statement
-    and if_statement = IfSt "(expr * statement_list) list" "statement_list option"
-    and case_statement = CaseSt expr "case_element list" "statement_list option"
+  and select_statement = IfSt "(expr * statement_list) list" "statement_list option" | 
+                         CaseSt expr "case_element list" "statement_list option"
     and case_element = CaseElem case_list statement_list
-  and iter_statement = ForSt for_statement | 
-                       WhileSt while_statement | 
-                       RepeatSt repeat_statement
-    and for_statement = ForSt symbolic_var for_list statement_list
-    and while_statement = WhileSt expr statement_list
-    and repeat_statement = RepeatSt statement_list expr
+  and iter_statement = ForSt symbolic_var for_list statement_list | 
+                       WhileSt expr statement_list | 
+                       RepeatSt statement_list expr
+
+
+primrec add_statement :: "statement_list \<Rightarrow> statement \<Rightarrow> statement_list"where
+"add_statement (statement_list.StList st_list) st =(statement_list.StList (st_list @ [st]))" 
 
 translations
   (type) "fb_invocation" <= (type) "func_block_name * (param_assign list)"

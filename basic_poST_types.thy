@@ -60,6 +60,22 @@ definition basic_post_type_to_bptint :: "basic_post_type \<Rightarrow> basic_pos
       (basic_post_type.Int val) \<Rightarrow> basic_post_type.Int val |
       (basic_post_type.Real val) \<Rightarrow> basic_post_type.Int (floor val) )"
 
+definition basic_post_type_to_Bool :: "basic_post_type \<Rightarrow> basic_post_type" where
+"basic_post_type_to_Bool var = (case var of
+  (basic_post_type.Nat val) \<Rightarrow> (basic_post_type.Bool (if val > 0 then True else False)) |
+  (basic_post_type.Int val) \<Rightarrow> (basic_post_type.Bool (if val \<noteq> 0 then True else False)) |
+  (basic_post_type.Real val) \<Rightarrow> (basic_post_type.Bool (if val \<noteq> 0 then True else False)) | 
+  (basic_post_type.Time val) \<Rightarrow> (basic_post_type.Bool (\<not> (time_eq val (time.Time 0 0 0 0 0)))) |
+  (basic_post_type.Bool val) \<Rightarrow> (basic_post_type.Bool val))"
+
+definition basic_post_type_to_bool :: "basic_post_type \<Rightarrow> bool" where
+"basic_post_type_to_bool var = (case var of
+  (basic_post_type.Nat val) \<Rightarrow>  (if val > 0 then True else False) |
+  (basic_post_type.Int val) \<Rightarrow> (if val \<noteq> 0 then True else False) |
+  (basic_post_type.Real val) \<Rightarrow>  (if val \<noteq> 0 then True else False) | 
+  (basic_post_type.Time val) \<Rightarrow>  (\<not> (time_eq val (time.Time 0 0 0 0 0))) |
+  (basic_post_type.Bool val) \<Rightarrow>  val)"
+
 definition basic_post_type_sum :: "basic_post_type \<Rightarrow> basic_post_type \<Rightarrow> basic_post_type" where
   "basic_post_type_sum var1 var2 = (case (var1,var2) of
     ((basic_post_type.Nat var1),(basic_post_type.Nat var2)) \<Rightarrow> basic_post_type.Nat (var1 + var2) |
@@ -168,6 +184,16 @@ definition const_basic_mod :: "const \<Rightarrow> basic_post_type \<Rightarrow>
   "const_basic_mod c var = basic_post_type_mod (const_to_basic c) var"
 definition basic_const_mod :: "basic_post_type \<Rightarrow> const \<Rightarrow> basic_post_type" where
   "basic_const_mod var c = basic_post_type_mod var (const_to_basic c)"
+
+definition basic_post_type_minus :: "basic_post_type \<Rightarrow> basic_post_type" where
+"basic_post_type_minus var = (case var of 
+  (basic_post_type.Int val) \<Rightarrow> (basic_post_type.Int (val * -1)) |
+  (basic_post_type.Real val) \<Rightarrow> (basic_post_type.Real (val * -1)) |
+  (basic_post_type.Bool val) \<Rightarrow> (basic_post_type.Bool (\<not> val)))"
+
+definition basic_post_type_not:: "basic_post_type \<Rightarrow> basic_post_type" where
+"basic_post_type_not var = (let res = basic_post_type_to_Bool var in
+  (case res of (basic_post_type.Bool val) \<Rightarrow> (basic_post_type.Bool val) ))"
 
 definition basic_post_type_eq :: "basic_post_type \<Rightarrow> basic_post_type \<Rightarrow> bool" where
   "basic_post_type_eq var1 var2 = (case (var1,var2) of 
@@ -316,4 +342,6 @@ definition const_basic_xor :: "const \<Rightarrow> basic_post_type \<Rightarrow>
 "const_basic_xor c var = basic_post_type_xor (const_to_basic c) var"
 definition basic_const_xor :: "basic_post_type \<Rightarrow> const \<Rightarrow> bool" where 
 "basic_const_xor var c = basic_post_type_xor var (const_to_basic c)"
+
+
 end

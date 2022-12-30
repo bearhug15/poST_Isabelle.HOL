@@ -1,5 +1,5 @@
 theory poST_test
-  imports poST_model
+  imports "~~/poST/poST_model/poST_model"
 begin
 
 datatype prog_name' = HandDryer'
@@ -46,7 +46,6 @@ definition Wait_HandDryer :: state_decl
   where "Wait_HandDryer == (Wait,False,StList 
 [(statement.SelectSt 
   (select_statement.IfSt
-    (if_statement.IfSt 
       [(expr.Unary 
         (unary_expr.UnaryExpr 
           None 
@@ -58,7 +57,7 @@ definition Wait_HandDryer :: state_decl
                (unary_expr.UnaryExpr 
                  None 
                 (prim_expr.Const (const.Bool True)))))])] 
-      None))),
+      None)),
   (statement.SetStateSt None)
 ],
 None)"
@@ -67,14 +66,13 @@ definition Work_HandDryer :: state_decl
   where "Work_HandDryer == (Work,False,StList
 [(statement.SelectSt 
   (select_statement.IfSt
-    (if_statement.IfSt
       [(expr.Unary 
         (unary_expr.UnaryExpr 
           None 
           (prim_expr.SymbolicVar hands)), 
         StList 
           [statement.ResetSt])]
-      None)))],
+      None))],
 Some (timeout_statement.Const 
   (const.Time (time.Time 0 0 0 2 0)) 
   (StList [

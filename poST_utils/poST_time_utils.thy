@@ -1,8 +1,6 @@
-theory poST_time
-  imports Main HOL.Real
+theory poST_time_utils
+  imports "~~/poST/poST_model/poST_time"
 begin
-(*days/hours/minutes/seconds/miliseconds*)
-datatype time = Time nat nat nat nat nat 
 
 definition nat_to_time :: "nat \<Rightarrow> time" where
 "nat_to_time var = 
@@ -51,9 +49,7 @@ fun time_sub :: "time \<Rightarrow> time \<Rightarrow> time" where
           then Time 0 0 0 0 0 
           else Time (nat resd) (nat resh) (nat resm) (nat ress) (nat resms)))"
 *)
-(*
-notation time_sum (infix "+" 65)
-*)
+
 fun time_eq :: "time \<Rightarrow> time \<Rightarrow>bool" where
 "time_eq (Time v10 v11 v12 v13 v14) (Time v20 v21 v22 v23 v24) = ((v14 = v24) \<and> (v13 = v23) \<and> (v12 = v22) \<and> (v11 = v21) \<and> (v10 = v20))"
 fun time_noteq :: "time \<Rightarrow> time \<Rightarrow>bool" where

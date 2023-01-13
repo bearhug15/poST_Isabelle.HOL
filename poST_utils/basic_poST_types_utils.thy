@@ -17,6 +17,13 @@ definition basic_post_type_to_bptint :: "basic_post_type \<Rightarrow> basic_pos
       (basic_post_type.Int val) \<Rightarrow> basic_post_type.Int val |
       (basic_post_type.Real val) \<Rightarrow> basic_post_type.Int (floor val) )"
 
+definition basic_post_type_to_int :: "basic_post_type \<Rightarrow> int" where
+"basic_post_type_to_int value = 
+    (case value of 
+      (basic_post_type.Nat val) \<Rightarrow> (int val) |
+      (basic_post_type.Int val) \<Rightarrow> val |
+      (basic_post_type.Real val) \<Rightarrow> (floor val) )"
+
 definition basic_post_type_to_Bool :: "basic_post_type \<Rightarrow> basic_post_type" where
 "basic_post_type_to_Bool var = (case var of
   (basic_post_type.Nat val) \<Rightarrow> (basic_post_type.Bool (if val > 0 then True else False)) |

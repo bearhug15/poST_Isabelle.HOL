@@ -137,18 +137,18 @@ text "Stacked version of variables"
 datatype stacked_array_interval = Expr stack stack | Int int int
 datatype stacked_var_init = 
   Symbolic basic_post_type "stack option" |
-  Array stacked_array_interval "basic_post_type list" "stack option" |
+  Array stacked_array_interval "basic_post_type list" "(stack list)option" |
   FunctionBlock func_block_name
-type_synonym staked_vars = "((symbolic_var, stacked_var_init) fmap)"
+type_synonym stacked_vars = "((symbolic_var, stacked_var_init) fmap)"
 
 (*TO DO stack process var*)
 text "Stacked version of process variables"
 datatype stacked_proc_var = 
-  Var staked_vars |
+  Var stacked_vars |
   ProcessVar process_var_decl |
-  InOutVar staked_vars |
-  InVar staked_vars |
-  OutVar staked_vars
+  InOutVar stacked_vars |
+  InVar stacked_vars |
+  OutVar stacked_vars
 
 
 text "Converting array interval to it's stacked version "
@@ -180,7 +180,7 @@ definition stack_var_init_decl :: "var_init_decl \<Rightarrow> stacked_var_init"
         values 
         (case array_init_option of
           None \<Rightarrow> None |
-          (Some ar_init) \<Rightarrow> (Some (stack_list_to_stack (map (\<lambda>exp. (stack_expr exp))ar_init))))) |
+          (Some ar_init) \<Rightarrow> (Some ((map (\<lambda>exp. (stack_expr exp))ar_init))))) |
     (var_init_decl.FunctionBlock fb_name) \<Rightarrow> (stacked_var_init.FunctionBlock fb_name))"
 
 text "Converting map of variables to stacked version"
@@ -206,11 +206,11 @@ definition stack_proc_vars :: "proc_var list \<Rightarrow> stacked_proc_var list
 
 text "Stacked version of program variables"
 datatype stacked_prog_var =
-  ExtVar staked_vars |
-  Var staked_vars |
-  InOutVar staked_vars |
-  InVar staked_vars |
-  OutVar staked_vars
+  ExtVar stacked_vars |
+  Var stacked_vars |
+  InOutVar stacked_vars |
+  InVar stacked_vars |
+  OutVar stacked_vars
 
 text "Converting external vars map to stacked version"
 definition stack_ext_var_decl :: "((symbolic_var, basic_post_type) fmap) \<Rightarrow> ((symbolic_var, stacked_var_init) fmap)" where
@@ -272,16 +272,16 @@ fun stack_program :: "program_decl \<Rightarrow> stacked_program" where
 
 (*TO DO function block and function stacking*)
 datatype stacked_func_block_var =  
-  ExtVar staked_vars |
-  Var staked_vars |
-  InOutVar staked_vars |
-  InVar staked_vars |
-  OutVar staked_vars
+  ExtVar stacked_vars |
+  Var stacked_vars |
+  InOutVar stacked_vars |
+  InVar stacked_vars |
+  OutVar stacked_vars
 datatype func_var =
-  Var staked_vars |
-  InOutVar staked_vars |
-  InVar staked_vars |
-  OutVar staked_vars
+  Var stacked_vars |
+  InOutVar stacked_vars |
+  InVar stacked_vars |
+  OutVar stacked_vars
 
 type_synonym stacked_function_block = "func_block_name * stacked_func_block_var list * stacked_process list"
 

@@ -1,5 +1,5 @@
 theory basic_poST_types
-  imports Main HOL.Real bit_types poST_time 
+  imports Main HOL.Real bit_types poST_time
 begin 
 
 type_synonym  wstring = "(char * char) list"

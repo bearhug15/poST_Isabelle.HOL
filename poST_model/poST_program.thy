@@ -1,5 +1,5 @@
 theory poST_program
-  imports poSt_process
+  imports poST_process
 begin
 datatype program_var = ExtVar ext_var_decl |
                     Var var_decl |

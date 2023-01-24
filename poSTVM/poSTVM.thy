@@ -58,17 +58,6 @@ termination get_expr
   done*)
 (*termination by size_change*)
 
-function inc :: "nat list \<Rightarrow> nat list" where
-"inc [] = []" |
-"inc (val#other) = (val + 1) # (inc other)"
-  by pat_completeness auto
-termination by lexicographic_order
-
-lemma "inc [] = []"
-  apply auto
-  done
-
-
 
 function (sequential) skip_expr :: "stack \<Rightarrow> stack" where 
   "skip_expr [] = []"
@@ -98,13 +87,58 @@ lemma shift_skip_expr_lessening:
   "length (skip_expr (skip_expr xs)) \<le> length (skip_expr xs)"
   by (induction xs rule: skip_expr.induct) (auto simp add: skip_expr_lessening)
 
+lemma skip_expr_lessening_suc:
+  "length (skip_expr xs) \<le> Suc (length xs)"
+  by (induction xs rule: skip_expr.induct) (auto simp add: skip_expr_lessening)
+
+find_theorems funpow_Suc_right
+
+find_theorems " _ \<le> _ \<Longrightarrow> _ \<le> _ \<Longrightarrow> _ \<le> _"
+
 lemma double_skip_expr_lessening : 
     "length (skip_expr (skip_expr xs)) \<le> length xs"
-  by (induction xs rule: skip_expr.induct) (auto simp add: skip_expr_lessening  Nat.le_SucI)
+  by (induction xs rule: skip_expr.induct) (auto simp add: skip_expr_lessening  Nat.le_SucI Orderings.preorder_class.order.trans)
 
-find_theorems " _ \<le> _ \<Longrightarrow> _ \<le> Suc _"
+fun skip_exprs :: "nat \<Rightarrow> stack \<Rightarrow> stack" where
+  "skip_exprs (Suc n) [] = []"
+| "skip_exprs (Suc n) ((stack_op.Unary _)#other)= skip_exprs (Suc n) other"
+| "skip_exprs (Suc n) ((stack_op.Binary _)#other)= skip_exprs (Suc (Suc n)) other"
+| "skip_exprs (Suc n) ((stack_op.Value _)#other) = skip_exprs n other"
+| "skip_exprs (Suc n) ((stack_op.Get _)#other) = skip_exprs n other"
+| "skip_exprs (Suc n) ((stack_op.GetArray _)#other) = skip_exprs (Suc n) other"
+| "skip_exprs (Suc n) ((stack_op.CheckProcStat _ _)#other) = skip_exprs n other"
+| "skip_exprs (Suc n) ((stack_op.FunctionCall _ _)#other) = skip_exprs n other"
+| "skip_exprs (Suc n) other = other"
 
 
+
+fun get_sev_expr :: "nat \<Rightarrow> stack \<Rightarrow> stack list" where
+  "get_sev_expr 0 _ = []"
+| "get_sev_expr (Suc n) [] = []"
+| "get_sev_expr (Suc n) ((stack_op.Unary unary_op_option)#other) = 
+    (case (get_sev_expr (Suc n) other) of
+    (first#rest) \<Rightarrow> ((stack_op.Unary unary_op_option) # first) # rest)"
+| "get_sev_expr (Suc n) ((stack_op.Binary binary_op)#other) =
+    (case (get_sev_expr (Suc (Suc n)) other) of
+    (first#second#rest) \<Rightarrow> ((stack_op.Binary binary_op) # first @ second) # rest)"
+| "get_sev_expr (Suc n) ((stack_op.Value val)#other) =
+    [stack_op.Value val] # (get_sev_expr n other)"
+| "get_sev_expr (Suc n) ((stack_op.Get val)#other) =
+    [stack_op.Get val] # (get_sev_expr n other)"
+| "get_sev_expr (Suc n) ((stack_op.GetArray val)#other) =
+    (case (get_sev_expr (Suc n) other) of
+    (first#rest) \<Rightarrow> ((stack_op.GetArray val) # first) # rest)"
+| "get_sev_expr (Suc n) ((stack_op.CheckProcStat val1 val2)#other) =
+    [stack_op.CheckProcStat val1 val2] # (get_sev_expr n other)"
+| "get_sev_expr (Suc n) ((stack_op.FunctionCall val1 val2)#other) =
+    [stack_op.FunctionCall val1 val2] # (get_sev_expr n other)"
+| "get_sev_expr (Suc n) other = []"
+
+definition get_one_expr :: "stack \<Rightarrow> stack" where 
+  "get_one_expr st = (nth (get_sev_expr 1 st) 0)"
+
+value "get_one_expr [(stack_op.Value (basic_post_type.Nat 0)), (stack_op.Value (basic_post_type.Nat 1))]" 
+(*
 (*TO DO*)
 function (sequential) get_one_expr :: "stack \<Rightarrow> stack" where
   "get_one_expr [] = []"
@@ -131,25 +165,25 @@ lemma const_l_get_one_expr [termination_simp]:
       "get_one_expr_dom xs \<Longrightarrow> (length (get_one_expr xs)) + (length (skip_expr xs)) = length xs"
   by (induction xs rule :get_one_expr.pinduct) (auto simp: get_one_expr.psimps)
 
-lemma const_l_buff_get_one_expr [termination_simp]:
-    "get_one_expr_dom xs \<Longrightarrow> (length (get_one_expr xs)) + (length (skip_expr xs)) = length xs"
-  apply (induct xs rule:get_one_expr.pinduct)
-                     apply (auto simp: get_one_expr.psimps)
-  done
-
-
 lemma skip_get_one_expr [termination_simp]:
       "get_one_expr_dom xs \<Longrightarrow> length (get_one_expr xs) = (length xs) - length (skip_expr xs)"
   apply (induct xs rule:get_one_expr.pinduct)
-                     apply (auto simp add: get_one_expr.psimps skip_expr_lessening Nat.Suc_diff_le)
+  apply (auto simp add: get_one_expr.psimps skip_expr_lessening Nat.Suc_diff_le double_skip_expr_lessening)
   done
+
+lemma buff [termination_simp]:
+    "get_one_expr_dom xs \<Longrightarrow> "
+
 
 lemma length_get_one_expr [termination_simp]:
     "get_one_expr_dom xs \<Longrightarrow> length (get_one_expr xs) \<le> (length xs)"
-  by (induction xs rule: get_one_expr.pinduct) (auto simp add: get_one_expr.psimps const_get_one_expr const_l_get_one_expr)
+  apply (induction xs rule: get_one_expr.pinduct) 
+  apply (auto simp add: get_one_expr.psimps) 
+  done
 
 termination get_one_expr by lexicographic_order
-
+*)
+(*
 (*TO DO get_expr as combination of get_simple_expr and skip_expr*)
 function (sequential) get_expr :: "stack \<Rightarrow> stack * stack" where
 "get_expr [] = ([],[])"
@@ -169,6 +203,9 @@ function (sequential) get_expr :: "stack \<Rightarrow> stack * stack" where
 lemma length_get_expr [termination_simp]:
   "get_expr_dom xs \<Longrightarrow> (let (f,s) = get_expr xs in ((length s) \<le> length xs))"
   by (induction xs rule: get_expr.pinduct) (auto simp add: get_expr.psimps)
+*)
+definition get_expr :: "stack \<Rightarrow> stack * stack" where
+"get_expr st = ((get_one_expr st), (skip_expr st))"
 
 text "Unwind stack until end or break point returning stack starting with the following instruction"
 fun skip_after_break :: "stack \<Rightarrow> stack" where
@@ -209,27 +246,51 @@ fun get_values :: "stack \<Rightarrow> stack * stack" where
 
 text "Converting stack Values to list of basic values. Assuming stack has only Value operationss"
 fun values_to_basics :: "stack \<Rightarrow> basic_post_type list" where
-"values_to_basics [] = []" |
-"values_to_basics ((stack_op.Value val)#other) = val # (values_to_basics other)" |
-"values_to_basics other = [] "
+  "values_to_basics [] = []" 
+| "values_to_basics ((stack_op.Value val)#other) = val # (values_to_basics other)" 
+| "values_to_basics other = [] "
 
-text "Splitting stack to all following case branches from stack and other stack"
-fun get_cases :: "stack \<Rightarrow> stack * (((basic_post_type list) * stack_op) list)" where
-"get_cases [] = ([],[])" |
-"get_cases ((stack_op.Value val)#other) = 
-  (let (values,new_st) = get_values ((stack_op.Value val)#other);
-        values = values_to_basics (values) in
-    (case new_st of
-      ((stack_op.StatementList loc_stack)#new_stack) \<Rightarrow> 
-        (let (res_stack,res_list) = get_cases new_stack in (res_stack,(values,(stack_op.StatementList loc_stack))#res_list))))" |
-"get_cases st = (st,[])"
-
-(*
 fun skip_case :: "stack \<Rightarrow> stack" where
-"skip_case [] = []" |
-"skip_case ((stack_op.CaseStatement loc_stack)#other) = skip_after_break other" |
-"skip_case other = other"
-*)
+  "skip_case [] = []"
+| "skip_case ((stack_op.Value val)#other) = skip_case other"
+| "skip_case ((stack_op.StatementList loc_stack)#other) = other"
+| "skip_case other = other"
+
+lemma skip_case_lessening:
+  "length xs \<ge> length (skip_case xs)"
+  by (induct xs rule: skip_case.induct) auto
+
+fun get_case :: "stack \<Rightarrow> ((basic_post_type list) * stack_op) list" where
+  "get_case [] = []"
+| "get_case ((stack_op.Value val)#other) =
+  (case (get_case other) of
+     ((b_list,st_list)#oth) \<Rightarrow> [(val#b_list,st_list)])"
+| "get_case ((stack_op.StatementList loc_stack)#oth) =
+  [([],(stack_op.StatementList loc_stack))]"
+| "get_case other = []"
+
+fun get_one_case :: "stack \<Rightarrow> stack * (((basic_post_type list) * stack_op) list)" where
+  "get_one_case st = (skip_case st, get_case st)"
+
+definition add_value_to_case :: "basic_post_type \<Rightarrow> (((basic_post_type list) * stack_op) list) \<Rightarrow> (((basic_post_type list) * stack_op) list)" where
+  "add_value_to_case val one_case = 
+  (let (val_list,st_list) = (nth one_case 0)
+    in [(val#val_list,st_list)])"
+
+fun get_sev_cases :: "nat \<Rightarrow> stack \<Rightarrow> stack * (((basic_post_type list) * stack_op) list)" where
+  "get_sev_cases (Suc n) [] = ([],[])"
+| "get_sev_cases (Suc n) ((stack_op.SetPoint point_type.Break)#other) = (other,[])"
+| "get_sev_cases (Suc n) ((stack_op.Value val)#other) = 
+    (let (new_stack1,one_case) = get_one_case other;
+         new_one_case = (add_value_to_case val one_case);
+         (new_stack2,cases) = get_sev_cases n new_stack1
+      in (new_stack2,new_one_case@cases))"
+| "get_sev_cases (Suc n) other = (other,[])"
+
+text "Splitting stack to all following case branches from stack and other stack. Collects 256 branches"
+definition get_cases :: "stack \<Rightarrow> stack * (((basic_post_type list) * stack_op) list)" where
+"get_cases st = get_sev_cases (length st) st"
+
 
 text "Checking if value contains in list of values "
 primrec check_case :: "basic_post_type list \<Rightarrow> basic_post_type \<Rightarrow> bool" where
@@ -239,6 +300,40 @@ primrec check_case :: "basic_post_type list \<Rightarrow> basic_post_type \<Righ
     then True
     else (check_case other val2))"
 
+primrec rest_list :: "'a list \<Rightarrow> 'a list" where
+  "rest_list [] = []"
+| "rest_list (el#other) = other"
+
+fun exec_sev_expr :: "nat \<Rightarrow> stack \<Rightarrow> model_state \<Rightarrow> (basic_post_type option) list" where
+  "exec_sev_expr 0 _ st = [None]"
+| "exec_sev_expr (Suc n) [] st = [None]"
+| "exec_sev_expr (Suc n) ((stack_op.Unary unary_op_option)#other) st = 
+  (case (unary_op_option,(exec_sev_expr (Suc n) other st)) of
+    (None,(first#rest)) \<Rightarrow> (first#rest) 
+  | (Some un_op,(first#rest)) \<Rightarrow> ((Some (unary_op_exec un_op (the first)))# rest))"
+| "exec_sev_expr (Suc n) ((stack_op.Binary bin_op)#other) st =
+  (case (exec_sev_expr (Suc (Suc n)) other st) 
+    of (first#second#rest) \<Rightarrow> (Some (binary_op_exec bin_op (the first) (the second)))#rest)"
+| "exec_sev_expr (Suc n) ((stack_op.Value val)#other) st = 
+    (Some val)#(exec_sev_expr n other st)"
+| "exec_sev_expr (Suc n) ((stack_op.Get var_name)#other) st = 
+ (Some (get_symbvar_by_name st var_name))#(exec_sev_expr n other st) " 
+
+| "exec_sev_expr (Suc n) ((stack_op.GetArray var_name) #other) st =
+  (case (exec_sev_expr (Suc n) other st)
+    of (first#rest) \<Rightarrow> (Some (get_arvar_by_name st var_name (the first)))#rest )" 
+
+| "exec_sev_expr (Suc n) ((stack_op.CheckProcStat proc_name proc_stat)#other) st = 
+  (Some (check_proc_status st proc_name proc_stat))#(exec_sev_expr n other st)" 
+(*TO DO Function Call*)
+| "exec_sev_expr (Suc n) ((stack_op.FunctionCall v1 v2)#other) st  =
+  None#(exec_sev_expr n other st)" 
+| "exec_sev_expr _ other _ = [None]"
+
+fun exec_expr :: "stack \<Rightarrow> model_state \<Rightarrow> basic_post_type option" where
+ "exec_expr st model_st = nth (exec_sev_expr 1 st model_st) 0"
+
+(*
 text "Executing first full expressions from stack. Assumes stack starting from some expression operation. Assuming all variables initialized"
 fun exec_expr :: "stack \<Rightarrow> model_state \<Rightarrow> basic_post_type option" where
 "exec_expr [] st = None" |
@@ -250,16 +345,16 @@ fun exec_expr :: "stack \<Rightarrow> model_state \<Rightarrow> basic_post_type 
       (Some un_op) \<Rightarrow> (Some (unary_op_exec un_op (the res)))))" |
 
 "exec_expr ((stack_op.Binary bin_op)#other) st = 
-  (let (left,new_stack) = (get_expr other 1)
+  (let (left,new_stack) = (get_expr other )
   in (Some (binary_op_exec 
             bin_op 
             (the (exec_expr left st)) 
             (the (exec_expr new_stack st)))))" |
 
-"exec_expr ((stack_op.Value val)#[]) st = 
+"exec_expr ((stack_op.Value val)#other) st = 
   (Some val)" |
 
-"exec_expr ((stack_op.Get var_name)#[]) st = 
+"exec_expr ((stack_op.Get var_name)#other) st = 
  Some (get_symbvar_by_name st var_name) " |
 
 "exec_expr ((stack_op.GetArray var_name) #other) st =
@@ -270,17 +365,10 @@ fun exec_expr :: "stack \<Rightarrow> model_state \<Rightarrow> basic_post_type 
   (let (_,_,_, cur_proc_stat,_) = (get_proc_state st proc_name) in 
   Some (basic_post_type.Bool (proc_status_is cur_proc_stat proc_stat)))" |
 (*TO DO Function Call*)
-"exec_expr ((stack_op.FunctionCall v1 v2)#[])st  =
+"exec_expr ((stack_op.FunctionCall v1 v2)#other)st  =
   None" |
 "exec_expr lt _ = None"
-
-definition get_ex :: "(string,nat) fmap" where
-"get_ex = fmap_of_list [(''a'',1::nat), (''b'',2::nat)]"
-
-definition self :: "(string,nat) fmap \<Rightarrow> (string,nat) fmap" where
-"self v = v"
-
-value "self (fmmap (\<lambda>x. x) get_ex)"
+*)
 
 text "Initialization of array"
 fun initialize_array :: "model_state \<Rightarrow> stacked_var_init \<Rightarrow> stacked_var_init" where
@@ -290,18 +378,18 @@ fun initialize_array :: "model_state \<Rightarrow> stacked_var_init \<Rightarrow
       (stacked_var_init.Array
         (case interval of
           (stacked_array_interval.Expr exp1 exp2) \<Rightarrow> 
-            (stacked_array_interval.Int (basic_post_type_to_int (the (exec_expr exp1))) (basic_post_type_to_int (the (exec_expr exp2)))) |
+            (stacked_array_interval.Int (basic_post_type_to_int (the (exec_expr exp1 st))) (basic_post_type_to_int (the (exec_expr exp2 st)))) |
           (stacked_array_interval.Int int1 int2) =>
             (stacked_array_interval.Int int1 int2))
         (map 
-          (\<lambda>exp. (the (exec_expr exp)))
+          (\<lambda>exp. (the (exec_expr exp st)))
           expr_list)
         None) |
     (stacked_var_init.Array interval values None) \<Rightarrow> 
       (stacked_var_init.Array 
         (case interval of
           (stacked_array_interval.Expr exp1 exp2) \<Rightarrow> 
-            (stacked_array_interval.Int (basic_post_type_to_int (the (exec_expr exp1))) (basic_post_type_to_int (the (exec_expr exp2)))) |
+            (stacked_array_interval.Int (basic_post_type_to_int (the (exec_expr exp1 st))) (basic_post_type_to_int (the (exec_expr exp2 st)))) |
           (stacked_array_interval.Int int1 int2) =>
             (stacked_array_interval.Int int1 int2)) 
         values 
@@ -333,11 +421,11 @@ fun initialize_stacked_proc_vars :: "model_state \<Rightarrow> stacked_proc_var 
 "initialize_stacked_proc_vars _ [] = []" |
 "initialize_stacked_proc_vars st (proc_var#other) = 
   ((case proc_var of
-    (stacked_proc_var.Var stacked_vars) \<Rightarrow> (stacked_proc_var.Var (initialize_stacked_vars stacked_vars))|
+    (stacked_proc_var.Var stacked_vars) \<Rightarrow> (stacked_proc_var.Var (initialize_stacked_vars st stacked_vars))|
     (stacked_proc_var.ProcessVar var) \<Rightarrow> (stacked_proc_var.ProcessVar var)|
-    (stacked_proc_var.InOutVar stacked_vars) \<Rightarrow> (stacked_proc_var.InOutVar (initialize_stacked_vars stacked_vars)) |
-    (stacked_proc_var.InVar stacked_vars) \<Rightarrow> (stacked_proc_var.InVar (initialize_stacked_vars stacked_vars))|
-    (stacked_proc_var.OutVar stacked_vars) \<Rightarrow> (stacked_proc_var.OutVar (initialize_stacked_vars stacked_vars)))
+    (stacked_proc_var.InOutVar stacked_vars) \<Rightarrow> (stacked_proc_var.InOutVar (initialize_stacked_vars st stacked_vars)) |
+    (stacked_proc_var.InVar stacked_vars) \<Rightarrow> (stacked_proc_var.InVar (initialize_stacked_vars st stacked_vars))|
+    (stacked_proc_var.OutVar stacked_vars) \<Rightarrow> (stacked_proc_var.OutVar (initialize_stacked_vars st stacked_vars)))
   #(initialize_stacked_proc_vars st other))"
 
 (*TO DO*)
@@ -387,6 +475,91 @@ fun initialize_program_vars :: "model_state \<Rightarrow> model_state" where
     fb_decl_list 
     f_decl_list))"
 
+(*statement_result = Break | Continue | Exit | Return | Reset | NextState*)
+
+primrec get_first_imp_res :: "statement_result list \<Rightarrow> statement_result" where
+  "get_first_imp_res [] = statement_result.Continue"
+| "get_first_imp_res (st_res#other) = 
+  (case st_res of
+    (statement_result.Continue) \<Rightarrow> (get_first_imp_res other)
+  | (statement_result.Return) \<Rightarrow> (statement_result.Return)
+  | (statement_result.Exit) \<Rightarrow> (statement_result.Exit)
+  | (statement_result.Break) \<Rightarrow> (statement_result.Break)
+  | (statement_result.Reset) \<Rightarrow> (statement_result.Reset)
+  | (statement_result.NextState) \<Rightarrow> (statement_result.NextState))"
+
+fun exec_sev_statement :: "nat \<Rightarrow> stack \<Rightarrow> model_state \<Rightarrow> (stack * model_state * (statement_result list))" and
+  exec_statement_list :: "stack \<Rightarrow> model_state \<Rightarrow> model_state * statement_result" where
+  "exec_sev_statement 0 stack st = (stack,st,[statement_result.Continue])"
+| "exec_sev_statement (Suc n) [] st = ([],st,[statement_result.Return])"
+| "exec_sev_statement (Suc n) ((stack_op.Assign var_name )#other) st =
+    (let (val_stack, new_stack) = (get_expr other);
+          new_st = (set_symbvar st var_name (the (exec_expr val_stack st)));
+         (last_stack,new_st,st_res) = (exec_sev_statement n new_stack new_st) 
+    in (last_stack,new_st,(statement_result.Continue)#st_res))"
+| "exec_sev_statement (Suc n) ((stack_op.AssignArray var_name)#other) st =
+    (let (pos_stack,new_stack1) = (get_expr other);
+         (val_stack,new_stack2) = (get_expr new_stack1);
+          new_st = (set_arvar st var_name (the (exec_expr pos_stack st)) (the (exec_expr val_stack st)));
+         (rest_stack,last_st,res_list) = (exec_sev_statement n new_stack2 new_st)
+    in (rest_stack,last_st,(statement_result.Continue)#res_list))"
+(*TO DO FunctionBlockCall*)
+| "exec_sev_statement (Suc n) ((stack_op.FunctionBlockCall fb_name param_assign_list )#other) st = (other,st,[])"
+| "exec_sev_statement (Suc n) ((stack_op.SetPoint p)#other) st = 
+    (let (rest_stack, last_st, res_list) = (exec_sev_statement n other st) 
+      in (rest_stack, last_st, (statement_result.Continue)#res_list))"
+| "exec_sev_statement (Suc n) ((stack_op.GoPoint p)#other) st = 
+    (case p of 
+    point_type.Break \<Rightarrow> (other, st, [statement_result.Break])|
+    point_type.Exit \<Rightarrow>  (other, st, [statement_result.Exit])|
+    point_type.Return \<Rightarrow>  (other, st, [statement_result.Return]))"
+| "exec_sev_statement (Suc n) ((stack_op.SetState state_name_option)#other) st =
+    (case state_name_option of
+    None \<Rightarrow> (other, st, [statement_result.NextState]) |
+    (Some st_name) \<Rightarrow> (other, set_state st st_name, [statement_result.Return]))"
+| "exec_sev_statement (Suc n) ((stack_op.ProcessStatement proc_name_option proc_mod)#other) st =
+  (case proc_mod of
+    (process_mod.Restart) \<Rightarrow> 
+      (case proc_name_option of
+        None \<Rightarrow> (other, reset_same_process st, [statement_result.Return]) |
+        (Some proc_name) \<Rightarrow> 
+          (let new_st = (reset_process st proc_name);
+               (rest_stack,last_st, res_list) = (exec_sev_statement n other new_st)
+            in (rest_stack,last_st,(statement_result.Continue)#res_list))) |
+    (process_mod.Stop) \<Rightarrow> 
+      (case proc_name_option of
+        None \<Rightarrow> (other, stop_same_process st, [statement_result.Return]) |
+        (Some proc_name) \<Rightarrow> 
+          (let new_st = (stop_process st proc_name);
+               (rest_stack,last_st, res_list) = (exec_sev_statement n other new_st)
+            in (rest_stack,last_st,(statement_result.Continue)#res_list))) |
+    (process_mod.Error) \<Rightarrow> 
+      (case proc_name_option of
+        None \<Rightarrow> (other, error_same_process st, [statement_result.Return]) |
+        (Some proc_name) \<Rightarrow> 
+          (let new_st = (error_process st proc_name);
+               (rest_stack,last_st, res_list) = (exec_sev_statement n other new_st)
+            in (rest_stack,last_st,(statement_result.Continue)#res_list))))"
+| "exec_sev_statement (Suc n) ((stack_op.IfStatement loc_stack )#(stack_op.StatementList st_stack)#other) st =
+  (case (exec_expr loc_stack st) of 
+    (Some (basic_post_type.Bool val)) \<Rightarrow> 
+      (if val 
+        then 
+          (let (new_st,st_result) = (exec_statement_list st_stack st)
+              in (case st_result of
+                    (statement_result.Break) => 
+                      (let (last_stack,last_st,res_list) = (exec_sev_statement n (skip_after_break other) new_st) 
+                        in (last_stack,last_st,(statement_result.Continue)#res_list))
+                  | (_) \<Rightarrow> (other,new_st,[st_result])))
+        else 
+          (exec_sev_statement (Suc n) other st)))"
+| "exec_statement_list stack st = 
+    (let (_,new_st,res_list) = (exec_sev_statement (length stack) stack st)
+      in (new_st,get_first_imp_res res_list))"
+
+
+
+(*
 text "Executing first full statement from stack returning other stack part modified model state and result of statement. Assuming stack starting from some statement operation. Assuming all variables initialized."
 fun exec_statement :: "stack \<Rightarrow> model_state \<Rightarrow> stack * model_state * statement_result" and
   exec_case_statement :: "model_state \<Rightarrow> ((basic_post_type list) * stack_op) list \<Rightarrow> basic_post_type \<Rightarrow>model_state * statement_result" where
@@ -394,11 +567,11 @@ fun exec_statement :: "stack \<Rightarrow> model_state \<Rightarrow> stack * mod
 
 "exec_statement ((stack_op.Assign var_name )#other) st = 
   (let (val_stack, new_stack) = (get_expr other)
-      in (new_stack,(set_symbvar st var_name (the (exec_expr val_stack))),statement_result.Continue))" |
+      in (new_stack,(set_symbvar st var_name (the (exec_expr val_stack st))),statement_result.Continue))" |
 "exec_statement ((stack_op.AssignArray var_name)#other) st = 
     (let (pos_stack,new_stack1) = (get_expr other);
          (val_stack,new_stack2) = (get_expr new_stack1) in
-        (new_stack2,(set_arvar st var_name (the (exec_expr pos_stack)) (the (exec_expr val_stack))),statement_result.Continue))" |
+        (new_stack2,(set_arvar st var_name (the (exec_expr pos_stack st)) (the (exec_expr val_stack st))),statement_result.Continue))" |
 (*TO DO FunctionBlockCall
 "exec_statement ((stack_op.FunctionBlockCall fb_name param_assign_list )#other) st "*)
 "exec_statement ((stack_op.SetPoint p)#other) st = (other,st, statement_result.Continue)" |
@@ -426,7 +599,7 @@ fun exec_statement :: "stack \<Rightarrow> model_state \<Rightarrow> stack * mod
         None \<Rightarrow> (other, error_same_process st, statement_result.Return) |
         (Some proc_name) \<Rightarrow> (other, error_process st proc_name, statement_result.Continue)))" |
 "exec_statement ((stack_op.IfStatement loc_stack )#other) st =
-  (case (exec_expr loc_stack) of 
+  (case (exec_expr loc_stack st) of 
     (Some (basic_post_type.Bool val)) \<Rightarrow> 
       (if val 
         then (case other of 
@@ -435,7 +608,7 @@ fun exec_statement :: "stack \<Rightarrow> model_state \<Rightarrow> stack * mod
         else (let (new_stack) = (skip_statement_list other) in (exec_statement new_stack st))))" |
 "exec_statement ((stack_op.CaseStatement loc_stack)#other) st =
   (let (new_stack,cases_list) = get_cases other;
-       value = the (exec_expr loc_stack);
+       value = the (exec_expr loc_stack st);
        (new_st,st_res) = exec_case_statement st cases_list value in
     (new_stack,new_st,st_res))" |
 "exec_case_statement st [] _ = (st, statement_result.Continue)" |
@@ -454,9 +627,9 @@ fun exec_statement :: "stack \<Rightarrow> model_state \<Rightarrow> stack * mod
     statement_result.Continue \<Rightarrow> (exec_statement new_stack new_st) |
     statement_result.Return \<Rightarrow> (new_stack, new_st, statement_result.Continue) |
     _ \<Rightarrow> (new_stack,new_st,st_res)))"
-
+*)
 (*TO DO while branch. Решил отложить эту ветвь и сначала разобраться с доказательством конечности остальных ветвей, т.к. циклы потенциально могут быть бесконечными и я пока не уверен что с таким делать*)
-
+ 
 (*
 definition get_val :: "(string, nat) fmap" where
   "get_val = fmempty"

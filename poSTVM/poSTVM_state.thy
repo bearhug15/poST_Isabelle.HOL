@@ -150,6 +150,12 @@ definition set_arvar :: "model_state \<Rightarrow> symbolic_var \<Rightarrow> ba
           (set_bval_to_list values (basic_post_type_sum (basic_post_type.Int val1) pos) value)
           opt)) )"
 
+text "Compare process status and estimated status"
+definition check_proc_status :: "model_state \<Rightarrow> process_name \<Rightarrow> proc_status \<Rightarrow> basic_post_type" where
+"check_proc_status st name proc_stat = 
+  (let (_,_,_, cur_proc_stat,_) = (get_proc_state st name) 
+    in (basic_post_type.Bool (proc_status_is cur_proc_stat proc_stat)))"
+
 text "Resetting timer in current process in model state"
 fun reset_timer :: "model_state \<Rightarrow> model_state" where
 "reset_timer (ST g_list (pr_map,pr_name) fb_list f_list) = 

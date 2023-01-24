@@ -1,5 +1,5 @@
 theory poST_vars_utils
-  imports "~~/poST/poST_model/poST_vars" "~~/poST/poST_utils/basic_poST_types_utils"
+  imports "~~/poST/poST_model/poST_vars" "~~/poST/poST_utils/poST_expr_utils"
 begin
 
 definition basics_to_array_interval :: "basic_post_type \<Rightarrow> basic_post_type \<Rightarrow> array_interval" where

@@ -5,7 +5,9 @@ datatype proc_status =
 Active |
 Inactive |
 Stop |
-Error
+Error |
+Timeout time
+
 datatype unary_op = Not | Minus
 datatype binary_op = And | 
                      Eq | 
@@ -41,16 +43,5 @@ datatype expr = Unary unary_expr |
 
 translations
   (type) "proc_status_expr" <= (type) "process_name * proc_status"
-
-definition proc_status_is :: "proc_status \<Rightarrow> proc_status \<Rightarrow> bool" where
-"proc_status_is s1 s2 = 
-(case (s1,s2) of 
-  (proc_status.Active,proc_status.Active) \<Rightarrow> True |
-  (proc_status.Inactive,proc_status.Inactive) \<Rightarrow> True |
-  (proc_status.Stop,proc_status.Stop) \<Rightarrow> True |
-  (proc_status.Error,proc_status.Error) \<Rightarrow> True |
-  (proc_status.Stop,proc_status.Inactive) \<Rightarrow> True |
-  (proc_status.Error,proc_status.Inactive) \<Rightarrow> True |
-  (_,_) \<Rightarrow> False)"
 
 end

@@ -39,7 +39,7 @@ fun stack_expr :: "expr \<Rightarrow> stack" and
   stack_prim_expr :: "prim_expr \<Rightarrow> stack" where
 "stack_expr exp = 
   (case exp of 
-    (expr.Unary (UnaryExpr unary_option prim_exp)) \<Rightarrow> (stack_op.Unary unary_option)# (stack_prim_expr prim_exp) |
+    (expr.Unary unary_option prim_exp) \<Rightarrow> (stack_op.Unary unary_option)# (stack_prim_expr prim_exp) |
     (expr.Binary bin_op exp1 exp2) \<Rightarrow> ((stack_op.Binary bin_op) # (stack_expr exp1)) @ (stack_expr exp2))" |
 "stack_prim_expr (prim_expr.Const c) = [stack_op.Value (const_to_basic c)]" |
 "stack_prim_expr (prim_expr.SymbolicVar var_name) = [stack_op.Get var_name ]" |
@@ -91,13 +91,13 @@ fun stack_statement :: "statement \<Rightarrow> stack" and
       in (case st_list of (statement_list.StList st_list) \<Rightarrow>  
             ([stack_op.IfStatement (stack_expr exp)]) 
             @ [stack_op.StatementList ((stack_statement_list st_list)@ [(stack_op.GoPoint point_type.Break)])]))  
-      @ (stack_if_statements other) 
-      @ [stack_op.SetPoint point_type.Break]" |
+      @ (stack_if_statements other)" |
+(*at end of stack ifs@ [stack_op.SetPoint point_type.Break]*)
 "stack_statement (statement.SelectSt (select_statement.CaseSt  exp case_then_list else_option)) =
   (stack_op.CaseStatement (stack_expr exp))
     #(case else_option of 
         None \<Rightarrow> (stack_case_statements case_then_list) |
-        Some(statement_list.StList st_list) \<Rightarrow> (stack_case_statements case_then_list) @ (stack_statement_list st_list))
+        Some(statement_list.StList st_list) \<Rightarrow> (stack_case_statements case_then_list) @ [stack_op.StatementList (stack_statement_list st_list)])
       @ [stack_op.SetPoint point_type.Break]" |
 "stack_case_statements [] =[]" |
 "stack_case_statements (cas#other) = 
@@ -112,7 +112,7 @@ fun stack_statement :: "statement \<Rightarrow> stack" and
   @ [stack_op.WhileStatement
       (stack_expr (expr.Binary 
                     binary_op.LessEq 
-                    (expr.Unary (UnaryExpr None (prim_expr.SymbolicVar var_name)) )
+                    (expr.Unary None (prim_expr.SymbolicVar var_name) )
                     exp2))]
   @ [stack_op.StatementList 
     ((stack_statement_list (st_list ))
@@ -306,24 +306,65 @@ fun stack_model :: "model \<Rightarrow> stacked_model" where
 definition expr_ex1 :: "expr" where
 "expr_ex1 = expr.Binary binary_op.Sum 
                         (expr.Binary binary_op.Mul 
-                                     (expr.Unary (UnaryExpr None (prim_expr.Const (const.Nat 1)))) 
-                                     (expr.Unary (UnaryExpr None (prim_expr.SymbolicVar ''var1'')))) 
-                        (expr.Unary (UnaryExpr (Some unary_op.Minus) 
+                                     (expr.Unary None (prim_expr.Const (const.Nat 1))) 
+                                     (expr.Unary  None (prim_expr.SymbolicVar ''var1''))) 
+                        (expr.Unary (Some unary_op.Minus) 
                                                (prim_expr.ArrayVar (array_var.ArrayVar 
                                                                     ''arvar1''
-                                                                    (expr.Unary (UnaryExpr None (prim_expr.Const (const.Int 1)))))))) "
+                                                                    (expr.Unary None (prim_expr.Const (const.Int 1)))))) "
 
 value "stack_expr (expr_ex1)"
 
 definition st_ex1 :: "statement" where
 "st_ex1 = statement.IterSt (iter_statement.ForSt
                             ''counter''
-                            ((expr.Unary (UnaryExpr None (prim_expr.Const (const.Nat 0)))),
-                             (expr.Unary (UnaryExpr None (prim_expr.Const (const.Nat 5)))),
-                             Some (expr.Unary (UnaryExpr None (prim_expr.Const (const.Nat 2)))))
+                            ((expr.Unary None (prim_expr.Const (const.Nat 0))),
+                             (expr.Unary None (prim_expr.Const (const.Nat 5))),
+                             Some (expr.Unary None (prim_expr.Const (const.Nat 2))))
                             (statement_list.StList 
                               [statement.AssignSt (common_var.SymbolicVar ''collector'',
-                                                   (expr.Unary (UnaryExpr None (prim_expr.SymbolicVar ''counter''))))]))"
+                                                   (expr.Unary None (prim_expr.SymbolicVar ''counter'')))]))"
 
 value" stack_statement (st_ex1)"
+
+(*
+datatype expr = Unary "unary_op option" prim_expr |
+                Binary binary_op expr expr
+  and prim_expr = Const const | 
+                  SymbolicVar symbolic_var | 
+                  ArrayVar array_var |
+                  Expression expr | 
+                  ProcStatEpxr proc_status_expr | 
+                  FunctionCall function_call	
+  and array_var = ArrayVar symbolic_var expr
+  and function_call =FuncCall func_name "param_assign list"
+  and param_assign =SymbolicVar  symbolic_var assign_type expr
+datatype statement = AssignSt assign_statement |
+                     FBInvocation fb_invocation |
+                     Return |
+                     Exit |
+                     ProcessSt process_statement |
+                     SetStateSt set_state_statement |
+                     ResetSt |
+                     SelectSt select_statement |
+                     IterSt iter_statement
+  and statement_list = StList "statement list"
+  and select_statement = IfSt "(expr * statement_list) list" "statement_list option" | 
+                         CaseSt expr "case_element list" "statement_list option"
+    and case_element = CaseElem case_list statement_list
+  and iter_statement = ForSt symbolic_var for_list statement_list | 
+                       WhileSt expr statement_list | 
+                       RepeatSt statement_list expr
+*)
+
+definition st_ex2 :: "statement" where
+"st_ex2 = statement.SelectSt (select_statement.CaseSt 
+                                (expr.Unary None (prim_expr.Const (const.Nat 0)))
+                                [ (case_element.CaseElem [0] (statement_list.StList [statement.Return])),
+                                  (case_element.CaseElem [1,2] (statement_list.StList [statement.Return])),
+                                  (case_element.CaseElem [3,5,6] (statement_list.StList [statement.Return]))]
+                                (Some (statement_list.StList [statement.Exit])))"
+
+value "stack_statement st_ex2"
+
 end

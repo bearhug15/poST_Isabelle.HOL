@@ -2,6 +2,43 @@ theory poST_test
   imports "~~/poST/poST_model/poST_model"
 begin
 
+datatype op = T1 nat | T2 nat | Tstack bool "op list"
+
+fun max_in_sev_op :: "nat \<Rightarrow> op list \<Rightarrow> nat * (op list)" and
+    max_in_list :: "op list \<Rightarrow> nat" where
+  "max_in_sev_op 0 _ = (0,[])"
+| "max_in_sev_op _ [] = (0,[])"
+| "max_in_sev_op (Suc n) ((op.T1 val)#other) = 
+    (let (max_val,rest) = max_in_sev_op n other 
+      in (max max_val val,rest))"
+| "max_in_sev_op (Suc n) ((op.T2 val)#other) = 
+    (let (max_val,rest) = max_in_sev_op n other 
+      in (max max_val val,rest))"
+| "max_in_sev_op (Suc n) ((op.Tstack switch op_list)#other) = 
+    (if switch 
+      then (let (max_val,rest) = max_in_sev_op n other;
+                val = max_in_list op_list
+             in (max max_val val,rest))
+      else (max_in_sev_op (Suc n) other))"
+| "max_in_list [] = 0"
+| "max_in_list other = fst (max_in_sev_op (length other) other)"
+
+fun skip_sev_op :: "nat \<Rightarrow> op list \<Rightarrow> (op list)" where
+  "skip_sev_op 0 _ = ([])"
+| "skip_sev_op _ [] = ([])"
+| "skip_sev_op (Suc n) ((op.T1 val)#other) = 
+    (let (rest) = skip_sev_op n other 
+      in (rest))"
+| "skip_sev_op (Suc n) ((op.T2 val)#other) = 
+    (let (rest) = skip_sev_op n other 
+      in (rest))"
+| "skip_sev_op (Suc n) ((op.Tstack switch op_list)#other) = 
+    (if switch 
+      then (let (rest) = skip_sev_op n other;
+         (_) = skip_sev_op (length op_list) op_list
+        in (rest))
+      else skip_sev_op (Suc n) other)"
+
 datatype prog_name' = HandDryer'
 datatype symbolic_var' = hands' | control' 
 datatype process_name' = HandDryer''

@@ -28,9 +28,8 @@ type_synonym reset_timer_statement = bool
 
 type_synonym proc_status_expr = "process_name * proc_status"
 
-datatype expr = Unary unary_expr |
+datatype expr = Unary "unary_op option"  prim_expr |
                 Binary binary_op expr expr
-  and unary_expr = UnaryExpr "unary_op option"  prim_expr
   and prim_expr = Const const | 
                   SymbolicVar symbolic_var | 
                   ArrayVar array_var |

@@ -488,9 +488,8 @@ primrec get_first_imp_res :: "statement_result list \<Rightarrow> statement_resu
   | (statement_result.Reset) \<Rightarrow> (statement_result.Reset)
   | (statement_result.NextState) \<Rightarrow> (statement_result.NextState))"
 
-fun exec_sev_statement :: "nat \<Rightarrow> stack \<Rightarrow> model_state \<Rightarrow> model_state * statement_result" and
-  exec_statement_list :: "stack \<Rightarrow> model_state \<Rightarrow> model_state * statement_result" and
-  exec_case_statement :: "model_state \<Rightarrow> ((basic_post_type list) * stack_op) list \<Rightarrow> basic_post_type \<Rightarrow> model_state * statement_result" where
+fun exec_sev_statement :: "nat \<Rightarrow> stack \<Rightarrow> model_state \<Rightarrow> model_state * statement_result" (* and
+  exec_case_statement :: "model_state \<Rightarrow> ((basic_post_type list) * stack_op) list \<Rightarrow> basic_post_type \<Rightarrow> model_state * statement_result"*) where
   "exec_sev_statement 0 stack st = (st,statement_result.Continue)"
 | "exec_sev_statement (Suc n) [] st = (st,statement_result.Return)"
 | "exec_sev_statement (Suc n) ((stack_op.Assign var_name )#other) st =
@@ -534,13 +533,13 @@ fun exec_sev_statement :: "nat \<Rightarrow> stack \<Rightarrow> model_state \<R
     (Some (basic_post_type.Bool val)) \<Rightarrow> 
       (if val 
         then 
-          (let (new_st,st_result) = (exec_statement_list st_stack st)
+          (let (new_st,st_result) = (exec_sev_statement (length st_stack) st_stack st)
               in (case st_result of
                     (statement_result.Break) => (exec_sev_statement n (skip_after_break other) new_st)
                   | (_) \<Rightarrow> (new_st,st_result)))
         else 
           (exec_sev_statement (Suc n) other st)))"
-| "exec_sev_statement (Suc n) ((stack_op.CaseStatement loc_stack)#other) st =
+(*| "exec_sev_statement (Suc n) ((stack_op.CaseStatement loc_stack)#other) st =
     (let (new_stack,cases_list) = get_cases other;
           value = the (exec_expr loc_stack st);
           (new_st,st_res) = exec_case_statement st cases_list value 
@@ -554,7 +553,7 @@ fun exec_sev_statement :: "nat \<Rightarrow> stack \<Rightarrow> model_state \<R
     then (exec_sev_statement 1 [st_list] st)
     else (exec_case_statement st other value))" 
 (*TO DO correct statement list*)
-| "exec_statement_list stack st = (exec_sev_statement 1 stack st)"
+| "exec_statement_list stack st = (exec_sev_statement 1 stack st)"*)
 
 
 (*

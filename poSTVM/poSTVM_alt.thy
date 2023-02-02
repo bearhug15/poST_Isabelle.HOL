@@ -294,7 +294,7 @@ definition unpack_bool :: "basic_post_type \<Rightarrow> bool" where
 
 fun exec_sev_statements :: "nat \<Rightarrow> statement_stack \<Rightarrow> model_state \<Rightarrow> model_state * statement_result" where
   "exec_sev_statements 0 _ st = (st, statement_result.Continue)"
-| "exec_sev_statements (Suc n) [] st = (st,statement_result.Return)"
+| "exec_sev_statements (Suc n) [] st = (st,statement_result.Continue)"
 | "exec_sev_statements (Suc n) ((statement_op.Assign var_name exp)#other) st =
     (exec_sev_statements n other 
       (set_symbvar st var_name 
@@ -330,7 +330,7 @@ fun exec_sev_statements :: "nat \<Rightarrow> statement_stack \<Rightarrow> mode
           (process_mod.Restart) \<Rightarrow> (reset_process st proc_name)
         | (process_mod.Stop) \<Rightarrow> (stop_process st proc_name)
         | (process_mod.Error) \<Rightarrow> (error_process st proc_name))))"
-| "exec_sev_statements (Suc n) ((statement_op.IfStatement exp)#(statement_op.StatementList st_stack)#other) st =
+(*| "exec_sev_statements (Suc n) ((statement_op.IfStatement exp)#(statement_op.StatementList st_stack)#other) st =
       (if (unpack_bool (the (exec_expr exp st))) 
         then 
           (let (new_st,st_result) = (exec_sev_statements (length st_stack) st_stack st)
@@ -338,7 +338,15 @@ fun exec_sev_statements :: "nat \<Rightarrow> statement_stack \<Rightarrow> mode
                     (statement_result.Break) => (exec_sev_statements n (skip_after_break other) new_st)
                   | (_) \<Rightarrow> (new_st,st_result)))
         else 
-          (exec_sev_statements n other st))"
+          (exec_sev_statements n other st))"*)
+| "exec_sev_statements (Suc n) ((statement_op.StatementList loc_stack)#other) st =
+ (let (new_st,st_res) = (exec_sev_statements (length loc_stack) loc_stack st) in 
+  (case st_res of
+    statement_result.Break \<Rightarrow> (exec_sev_statements n (skip_after_break other) new_st) |
+    statement_result.Continue \<Rightarrow> (exec_sev_statements n other new_st) |
+    _ \<Rightarrow> (new_st,st_res)))"
+| "exec_sev_statements (Suc n) ((statement_op.WhileStatement exp)#(statement_op.StatementList loc_stack)#other) =
+    "
 
 
 end

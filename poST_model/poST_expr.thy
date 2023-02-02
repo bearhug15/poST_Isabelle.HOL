@@ -26,21 +26,13 @@ datatype binary_op = And |
 datatype assign_type = ColonEq | Conseq
 type_synonym reset_timer_statement = bool
 
-type_synonym proc_status_expr = "process_name * proc_status"
-
-datatype expr = Unary "unary_op option"  prim_expr |
-                Binary binary_op expr expr
-  and prim_expr = Const const | 
-                  SymbolicVar symbolic_var | 
-                  ArrayVar array_var |
-                  Expression expr | 
-                  ProcStatEpxr proc_status_expr | 
-                  FunctionCall function_call	
-  and array_var = ArrayVar symbolic_var expr
-  and function_call =FuncCall func_name "param_assign list"
+datatype expr = Unary "unary_op option"  expr |
+                Binary binary_op expr expr |
+                Const const | 
+                SymbolicVar symbolic_var | 
+                ArrayVar symbolic_var expr |
+                ProcStatEpxr process_name proc_status | 
+                FunctionCall func_name "param_assign list"	
   and param_assign =SymbolicVar  symbolic_var assign_type expr 
-
-translations
-  (type) "proc_status_expr" <= (type) "process_name * proc_status"
 
 end

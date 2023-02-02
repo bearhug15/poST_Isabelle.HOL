@@ -19,18 +19,14 @@ datatype expr_op =
 
 type_synonym expr_stack = "expr_op list"
 
-fun stack_expr :: "expr \<Rightarrow> expr_stack" and
-    stack_prim_expr :: "prim_expr \<Rightarrow> expr_stack" where
-  "stack_expr exp = 
-    (case exp of 
-      (expr.Unary unary_option prim_exp) \<Rightarrow> (expr_op.Unary unary_option)# (stack_prim_expr prim_exp) 
-    | (expr.Binary bin_op exp1 exp2) \<Rightarrow> ((expr_op.Binary bin_op) # (stack_expr exp1)) @ (stack_expr exp2))" 
-| "stack_prim_expr (prim_expr.Const c) = [expr_op.Value (const_to_basic c)]" 
-| "stack_prim_expr (prim_expr.SymbolicVar var_name) = [expr_op.Get var_name ]" 
-| "stack_prim_expr (prim_expr.ArrayVar (array_var.ArrayVar var_name exp)) = (expr_op.GetArray var_name) #(stack_expr exp)" 
-| "stack_prim_expr (prim_expr.ProcStatEpxr (proc_name, proc_stat)) = [expr_op.CheckProcStat proc_name proc_stat]" 
-| "stack_prim_expr (prim_expr.Expression exp) = stack_expr exp" 
-| "stack_prim_expr (prim_expr.FunctionCall (function_call.FuncCall f_name param_assign_list)) = [expr_op.FunctionCall f_name param_assign_list]"
+fun stack_expr :: "expr \<Rightarrow> expr_stack" where
+  "stack_expr (expr.Unary unary_option exp) = (expr_op.Unary unary_option)# (stack_expr exp)"
+| "stack_expr (expr.Binary bin_op exp1 exp2) = ((expr_op.Binary bin_op) # (stack_expr exp1)) @ (stack_expr exp2)"
+| "stack_expr (expr.Const c) = [expr_op.Value (const_to_basic c)]" 
+| "stack_expr (expr.SymbolicVar var_name) = [expr_op.Get var_name ]" 
+| "stack_expr (expr.ArrayVar var_name exp) = (expr_op.GetArray var_name) #(stack_expr exp)" 
+| "stack_expr (expr.ProcStatEpxr proc_name proc_stat) = [expr_op.CheckProcStat proc_name proc_stat]" 
+| "stack_expr (expr.FunctionCall f_name param_assign_list) = [expr_op.FunctionCall f_name param_assign_list]"
 
 datatype statement_op = 
   Assign symbolic_var expr_stack |
@@ -43,7 +39,7 @@ datatype statement_op =
   StatementList "statement_op list" |
   IfStatement expr_stack |
   CaseHeadStatement expr_stack |
-  CaseStatement expr_stack |
+  CaseStatement "nat list" |
   WhileStatement expr_stack |
   ResetTimer
 
@@ -60,11 +56,11 @@ definition basics_to_values_stack :: "basic_post_type list \<Rightarrow> expr_st
 fun stack_statement :: "statement \<Rightarrow> statement_stack" and
     stack_statement_list:: "statement list \<Rightarrow>statement_stack" and
     stack_if_statements :: "(expr * statement_list) list \<Rightarrow> statement_stack" and
-    stack_case_statements :: "case_element list \<Rightarrow> statement_stack"  where
+    stack_case_statements :: "(case_list * (statement list)) list \<Rightarrow> statement_stack"  where
   "stack_statement (statement.AssignSt (var, exp)) = 
     (case var of 
-      (common_var.SymbolicVar var_name) \<Rightarrow> [(statement_op.Assign var_name (stack_expr exp))] 
-    | (common_var.Array (array_var.ArrayVar var_name exp2)) \<Rightarrow>[(statement_op.AssignArray var_name ((stack_expr exp2)@ (stack_expr exp)))])" 
+      (common_var.Symbolic var_name) \<Rightarrow> [(statement_op.Assign var_name (stack_expr exp))] 
+    | (common_var.Array  var_name exp2) \<Rightarrow>[(statement_op.AssignArray var_name ((stack_expr exp2)@ (stack_expr exp)))])" 
 | "stack_statement (statement.Return) = [statement_op.GoPoint point_type.Return]" 
 | "stack_statement (statement.Exit) = [statement_op.GoPoint point_type.Exit]" 
 | "stack_statement (statement.ProcessSt proc_statement) = 
@@ -79,14 +75,14 @@ fun stack_statement :: "statement \<Rightarrow> statement_stack" and
 | "stack_statement (statement.SelectSt (select_statement.IfSt  if_then_list else_option )) = 
   (let if_stack = (stack_if_statements if_then_list) in  
         (case else_option of None \<Rightarrow> if_stack |
-          Some(statement_list.StList st_list) \<Rightarrow> if_stack @ (stack_statement_list st_list))
+          Some(st_list) \<Rightarrow> if_stack @ (stack_statement_list st_list))
           @[statement_op.SetPoint point_type.Break])" 
 | "stack_statement_list [] = []" 
 | "stack_statement_list (st#other) = (stack_statement st) @ (stack_statement_list other)" 
 | "stack_if_statements [] = []" 
 | "stack_if_statements (ifs#other) = 
     (let (exp,st_list) = ifs 
-      in (case st_list of (statement_list.StList st_list) \<Rightarrow>  
+      in (case st_list of (st_list) \<Rightarrow>  
             ([statement_op.IfStatement (stack_expr exp)]) 
             @ [statement_op.StatementList ((stack_statement_list st_list)@ [(statement_op.GoPoint point_type.Break)])]))  
       @ (stack_if_statements other)" 
@@ -94,21 +90,21 @@ fun stack_statement :: "statement \<Rightarrow> statement_stack" and
     (statement_op.CaseHeadStatement (stack_expr exp))
     #(case else_option of
         None \<Rightarrow> (stack_case_statements case_then_list)
-      | Some(statement_list.StList st_list) \<Rightarrow> (stack_case_statements case_then_list) @ [statement_op.StatementList (stack_statement_list st_list)])
+      | Some(st_list) \<Rightarrow> (stack_case_statements case_then_list) @ [statement_op.StatementList (stack_statement_list st_list)])
     @ [statement_op.SetPoint point_type.Break]"
 | "stack_case_statements [] = []"
 | "stack_case_statements (cas#other) =
     (case cas of
-      (case_element.CaseElem nat_list (statement_list.StList st_list)) \<Rightarrow>
-        (statement_op.CaseStatement (nat_to_values_stack nat_list))
+      (nat_list, st_list) \<Rightarrow>
+        (statement_op.CaseStatement nat_list)
       # [statement_op.StatementList ((stack_statement_list st_list) @ [(statement_op.GoPoint point_type.Break)])]
       @ (stack_case_statements other))"
-| "stack_statement (statement.IterSt (iter_statement.ForSt  var_name (exp1,exp2,exp_option) (statement_list.StList st_list))) = 
+| "stack_statement (statement.IterSt (iter_statement.ForSt  var_name (exp1,exp2,exp_option) st_list)) = 
   [statement_op.Assign var_name (stack_expr exp1)] 
   @ [statement_op.WhileStatement
       (stack_expr (expr.Binary 
                     binary_op.LessEq 
-                    (expr.Unary None (prim_expr.SymbolicVar var_name) )
+                    (expr.Unary None (expr.SymbolicVar var_name) )
                     exp2))]
   @ [statement_op.StatementList 
       ((stack_statement_list (st_list ))
@@ -117,11 +113,11 @@ fun stack_statement :: "statement \<Rightarrow> statement_stack" and
           (case exp_option of
             None \<Rightarrow> [expr_op.Binary binary_op.Sum ,expr_op.Get var_name, expr_op.Value (basic_post_type.Nat 1)] 
           | Some(exp) \<Rightarrow>[expr_op.Binary binary_op.Sum ,expr_op.Get var_name] @ (stack_expr exp))])] " 
-| "stack_statement (statement.IterSt (iter_statement.WhileSt  exp (statement_list.StList st_list))) = 
+| "stack_statement (statement.IterSt (iter_statement.WhileSt  exp st_list)) = 
    [statement_op.WhileStatement (stack_expr exp)]
    @ [statement_op.StatementList (stack_statement_list st_list)]
    @ [statement_op.SetPoint point_type.Break]" 
-| "stack_statement (statement.IterSt (iter_statement.RepeatSt  (statement_list.StList st_list) exp)) =  
+| "stack_statement (statement.IterSt (iter_statement.RepeatSt  st_list exp)) =  
     (let st_list = [statement_op.StatementList (stack_statement_list st_list)] 
     in (st_list
     @[statement_op.WhileStatement (stack_expr exp)]
@@ -237,11 +233,11 @@ type_synonym stacked_state = "state_name * bool * statement_stack * (timeout opt
 
 text "Converting state declaration to stacked version"
 fun stack_state :: "state_decl \<Rightarrow> stacked_state" where
-"stack_state (st_name, is_looped, statement_list.StList (st_list), None) = 
+"stack_state (st_name, is_looped, st_list, None) = 
   (st_name, is_looped, (stack_statement_list st_list), None)" |
-"stack_state (st_name, is_looped, statement_list.StList (st_list), (Some (timeout_statement.Const val (statement_list.StList sl)))) = 
+"stack_state (st_name, is_looped, st_list, (Some (timeout_statement.Const val sl))) = 
   (st_name, is_looped, (stack_statement_list st_list), (Some (timeout.Const val (stack_statement_list sl))))" |
-"stack_state (st_name, is_looped, statement_list.StList (st_list), (Some (timeout_statement.SymbolicVar val (statement_list.StList sl)))) = 
+"stack_state (st_name, is_looped, st_list, (Some (timeout_statement.SymbolicVar val sl))) = 
   (st_name, is_looped, (stack_statement_list st_list), (Some (timeout.SymbolicVar val (stack_statement_list sl))))" 
 
 text "Stacked version of process declaration"

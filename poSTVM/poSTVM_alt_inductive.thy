@@ -205,4 +205,109 @@ inductive
   | Reset : "\<lbrakk>st2 = (statement_result.Continue, (reset_timer (snd st)))\<rbrakk>\<Longrightarrow>
             st\<turnstile>stmt.ResetSt\<longrightarrow>st2"
 
+print_theorems
+
+value "fmempty :: (nat,nat) fmap"
+definition test_process_state1 :: "process_state" where
+"test_process_state1 = 
+  ([stacked_proc_var.Var (fmupd 
+                            ''var1'' 
+                            (stacked_var_init.Symbolic (basic_post_type.Nat 0) None) 
+                          fmempty)],
+  ''state1'',
+  ''state1'',
+  proc_status.Active, 
+  time.Time 0 0 0 0 0)"
+
+definition test_process_state2 :: "process_state" where
+"test_process_state2 = 
+  ([stacked_proc_var.Var (fmupd 
+                            ''var1'' 
+                            (stacked_var_init.Symbolic (basic_post_type.Nat 1) None) 
+                          fmempty)],
+  ''state1'',
+  ''state1'',
+  proc_status.Active, 
+  time.Time 0 0 0 0 0)"
+
+definition test_program_state1 :: "program_state" where
+"test_program_state1 = 
+  ([],
+  (fmupd
+    ''process1''
+    test_process_state1
+    fmempty),
+  ''process1'')"
+
+definition test_program_state2 :: "program_state" where
+"test_program_state2 = 
+  ([],
+  (fmupd
+    ''process1''
+    test_process_state2
+    fmempty),
+  ''process1'')"
+
+definition test_ms1 :: "model_state" where
+"test_ms1 = model_state.ST
+  []
+  ((fmupd
+    ''program1''
+    test_program_state1
+    fmempty),''program1'')
+  []
+  []"
+
+definition test_ms2 :: "model_state" where
+"test_ms2 = model_state.ST
+  []
+  ((fmupd
+    ''program1''
+    test_program_state2
+    fmempty),''program1'')
+  []
+  []"
+
+definition test_statement1 :: "stmt" where
+"test_statement1 = stmt.AssignSt (common_var.Symbolic ''var1'',expr.Const (const.Nat 1))"
+
+
+lemma "(statement_result.Continue,test_ms1)\<turnstile>test_statement1\<longrightarrow>(statement_result.Continue,test_ms2)"
+  apply (simp add: test_statement1_def 
+                test_ms1_def 
+                test_ms2_def 
+                test_process_state1_def
+                test_process_state2_def
+                test_program_state1_def
+                test_program_state2_def)
+  apply (rule AssignS)
+   apply (rule Const)
+   apply (auto)
+  apply (simp add: const_to_basic_def
+set_symbvar_def
+get_cur_var_by_name_def
+set_symbvar_in_ps_in_cur_prog_def
+get_var_by_name.simps
+get_cur_var_list_def
+get_cur_proc_var_list_def
+find_var_by_name_def
+get_cur_var_by_name_def
+get_var_by_name.simps
+get_cur_proc_state_by_prog_def)
+  apply (simp_all)
+  done
+
+(*
+apply (simp add: const_to_basic_def
+set_symbvar_def
+get_cur_var_by_name_def
+set_symbvar_in_ps_in_cur_prog_def
+get_var_by_name.simps
+get_cur_var_list_def
+get_cur_proc_var_list_def
+find_var_by_name_def
+get_cur_var_by_name_def
+get_var_by_name.simps
+get_cur_proc_state_by_prog_def)
+*)
 end

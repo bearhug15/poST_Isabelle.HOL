@@ -130,8 +130,8 @@ fun stack_statement :: "statement \<Rightarrow> statement_stack" and
 text "Stacked version of variables"
 datatype stacked_array_interval = Expr expr_stack expr_stack | Int int int
 datatype stacked_var_init = 
-  Symbolic basic_post_type "expr_stack option" |
-  Array stacked_array_interval "basic_post_type list" "(expr_stack list) option" |
+  Symbolic basic_post_type "expr option" |
+  Array stacked_array_interval "basic_post_type list" "(expr list) option" |
   FunctionBlock func_block_name
 type_synonym stacked_vars = "((symbolic_var, stacked_var_init) fmap)"
 
@@ -165,16 +165,12 @@ definition stack_var_init_decl :: "var_init_decl \<Rightarrow> stacked_var_init"
     (var_init_decl.Simple (value,exp_option)) \<Rightarrow> 
       (stacked_var_init.Symbolic 
         value 
-        (case exp_option of 
-          None \<Rightarrow> None | (Some exp) \<Rightarrow> 
-          (Some (stack_expr exp)))) |
+        exp_option) |
     (var_init_decl.Array ((ar_inter,values),array_init_option)) \<Rightarrow> 
       (stacked_var_init.Array 
         (ainter_to_sainter ar_inter) 
         values 
-        (case array_init_option of
-          None \<Rightarrow> None |
-          (Some ar_init) \<Rightarrow> (Some ((map (\<lambda>exp. (stack_expr exp))ar_init))))) |
+        array_init_option) |
     (var_init_decl.FunctionBlock fb_name) \<Rightarrow> (stacked_var_init.FunctionBlock fb_name))"
 
 text "Converting map of variables to stacked version"

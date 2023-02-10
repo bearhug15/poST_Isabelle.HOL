@@ -144,6 +144,13 @@ definition set_symbvar :: "model_state \<Rightarrow> symbolic_var \<Rightarrow> 
 "set_symbvar st var_name value =
   (case (get_cur_var_by_name st var_name) of
     (stacked_var_init.Symbolic old_val opt) \<Rightarrow> (set_symbvar_in_ps_in_cur_prog st var_name (stacked_var_init.Symbolic value opt)) )"
+(*
+lemma set_symbvar_part_assoc:
+  "name1 \<noteq> name2 \<Longrightarrow> set_symbvar (set_symbvar st name1 val1) name2 val2 =
+    set_symbvar (set_symbvar st name2 val2) name1 val1"
+  apply (simp add: set_symbvar_def
+                   get_cur_var_by_name_def)
+*)
 
 text "Setting new val to list in position"
 definition set_bval_to_list :: "basic_post_type list \<Rightarrow> basic_post_type \<Rightarrow> basic_post_type \<Rightarrow> basic_post_type list" where

@@ -73,22 +73,6 @@ lemma "(statement_result.Continue,test_ms1)\<turnstile>test_statement1\<longrigh
   apply (rule AssignS)
    apply (rule Const)
    apply (auto)
-  apply (auto simp add: const_to_basic_def
-set_symbvar_def
-get_cur_var_by_name_def
-set_symbvar_in_ps_in_cur_prog_def
-set_symbvar_in_ps_in_cur_proc_def
-get_var_by_name.simps
-get_cur_var_list_def
-get_cur_proc_var_list_def
-find_var_by_name_def
-get_cur_var_by_name_def
-get_var_by_name.simps
-get_cur_proc_state_by_prog_def
-get_cur_prog_state_def
-set_symbvar_in_ps_def
-fstOp_def
-sndOp_def)
   done
 
 definition test_process_state3 :: "process_state" where
@@ -135,46 +119,10 @@ lemma "(statement_result.Continue,test_ms1)\<turnstile>test_statement2\<longrigh
    apply (rule BinOp)
      apply (rule Var)
    apply (auto)
-  apply (auto simp add: const_to_basic_def
-set_symbvar_def
-get_cur_var_by_name_def
-set_symbvar_in_ps_in_cur_prog_def
-set_symbvar_in_ps_in_cur_proc_def
-get_var_by_name.simps
-get_cur_var_list_def
-get_cur_proc_var_list_def
-find_var_by_name_def
-get_cur_var_by_name_def
-get_var_by_name.simps
-get_cur_proc_state_by_prog_def
-get_cur_prog_state_def
-set_symbvar_in_ps_def
-fstOp_def
-sndOp_def)
    apply (rule Const)
-apply (auto simp add: const_to_basic_def
-set_symbvar_def
-get_cur_var_by_name_def
-set_symbvar_in_ps_in_cur_prog_def
-set_symbvar_in_ps_in_cur_proc_def
-get_var_by_name.simps
-get_cur_var_list_def
-get_cur_proc_var_list_def
-find_var_by_name_def
-get_cur_var_by_name_def
-get_var_by_name.simps
-get_cur_proc_state_by_prog_def
-get_cur_prog_state_def
-set_symbvar_in_ps_def
-get_symbvar_by_name_def
-binary_op_exec_def
-basic_post_type_sum_def
-fstOp_def
-sndOp_def
-Num.numeral_2_eq_2
-)
+apply (auto)
 done
-(* Don't work now
+(* Don't work now*)
 definition test_process_state4 :: "process_state" where
 "test_process_state4 = 
   ([stacked_proc_var.Var (fmupd 
@@ -244,6 +192,12 @@ definition test_statement3 :: "stmt" where
   (stmt.AssignSt (common_var.Symbolic ''var2'',
     expr.Binary (binary_op.Sum) (expr.SymbolicVar ''var2'') (expr.Const (const.Nat 2))))"
 
+find_theorems "Suc (Suc 0)"
+
+lemma "(fmupd 2 3 (fmupd 1 2 fmempty)) = (fmupd 2 3 (fmupd 1 2 (fmupd 2 1 (fmupd 1 1 fmempty))))"
+  apply (metis fmupd_idem fmupd_reorder_neq)
+  done
+
 lemma "(statement_result.Continue,test_ms4)\<turnstile>test_statement3\<longrightarrow>(statement_result.Continue,test_ms5)"
   apply (simp add: test_statement3_def 
                 test_ms4_def 
@@ -252,94 +206,143 @@ lemma "(statement_result.Continue,test_ms4)\<turnstile>test_statement3\<longrigh
                 test_process_state5_def
                 test_program_state4_def
                 test_program_state5_def)
-apply (rule Comb)
+  apply (rule Comb)
+   apply (rule AssignS)
+    apply (rule BinOp)
+      apply (rule Var)
+      apply (auto)
+   apply (rule Const)
+   apply (auto)
   apply (rule AssignS)
    apply (rule BinOp)
      apply (rule Var)
-   apply (auto)
-  apply (auto simp add: const_to_basic_def
-set_symbvar_def
-get_cur_var_by_name_def
-set_symbvar_in_ps_in_cur_prog_def
-set_symbvar_in_ps_in_cur_proc_def
-get_var_by_name.simps
-get_cur_var_list_def
-get_cur_proc_var_list_def
-find_var_by_name_def
-get_cur_var_by_name_def
-get_var_by_name.simps
-get_cur_proc_state_by_prog_def
-get_cur_prog_state_def
-set_symbvar_in_ps_def
-fstOp_def
-sndOp_def)
+     apply (auto)
    apply (rule Const)
-apply (auto simp add: const_to_basic_def
-set_symbvar_def
-get_cur_var_by_name_def
-set_symbvar_in_ps_in_cur_prog_def
-set_symbvar_in_ps_in_cur_proc_def
-get_var_by_name.simps
-get_cur_var_list_def
-get_cur_proc_var_list_def
-find_var_by_name_def
-get_cur_var_by_name_def
-get_var_by_name.simps
-get_cur_proc_state_by_prog_def
-get_cur_prog_state_def
-set_symbvar_in_ps_def
-get_symbvar_by_name_def
-binary_op_exec_def
-basic_post_type_sum_def
-fstOp_def
-sndOp_def
-Nat.One_nat_def
-)
-  apply (rule AssignS)
-   apply (rule BinOp)
-     apply (rule Var)
    apply (auto)
-  apply (auto simp add: const_to_basic_def
-set_symbvar_def
-get_cur_var_by_name_def
-set_symbvar_in_ps_in_cur_prog_def
-set_symbvar_in_ps_in_cur_proc_def
-get_var_by_name.simps
-get_cur_var_list_def
-get_cur_proc_var_list_def
-find_var_by_name_def
-get_cur_var_by_name_def
-get_var_by_name.simps
-get_cur_proc_state_by_prog_def
-get_cur_prog_state_def
-set_symbvar_in_ps_def
-fstOp_def
-sndOp_def)
-   apply (rule Const)
-apply (auto simp add: const_to_basic_def
-set_symbvar_def
-get_cur_var_by_name_def
-set_symbvar_in_ps_in_cur_prog_def
-set_symbvar_in_ps_in_cur_proc_def
-get_var_by_name.simps
-get_cur_var_list_def
-get_cur_proc_var_list_def
-find_var_by_name_def
-get_cur_var_by_name_def
-get_var_by_name.simps
-get_cur_proc_state_by_prog_def
-get_cur_prog_state_def
-set_symbvar_in_ps_def
-get_symbvar_by_name_def
-binary_op_exec_def
-basic_post_type_sum_def
-fstOp_def
-sndOp_def
-Num.numeral_2_eq_2
-)
-done*)
+  apply (auto simp add: fmupd_reorder_neq Num.numeral_2_eq_2)
+  done
+(**)
 
 find_theorems "(Suc 0)"
+
+definition test_process_state6 :: "process_state" where
+"test_process_state6 = 
+  ([stacked_proc_var.Var (fmupd 
+                            ''var2'' 
+                            (stacked_var_init.Symbolic (basic_post_type.Nat 3) None)
+                          (fmupd 
+                            ''var1'' 
+                            (stacked_var_init.Symbolic (basic_post_type.Nat 1) None) 
+                          fmempty))],
+  ''state1'',
+  ''state1'',
+  proc_status.Active, 
+  time.Time 0 0 0 0 0)"
+definition test_program_state6 :: "program_state" where
+"test_program_state6 = 
+  ([],
+  (fmupd
+    ''process1''
+    test_process_state6
+    fmempty),
+  ''process1'')"
+definition test_ms6 :: "model_state" where
+"test_ms6 = model_state.ST
+  []
+  ((fmupd
+    ''program1''
+    test_program_state6
+    fmempty),''program1'')
+  []
+  []"
+
+(*
+var1 = var1 + 1;
+IF var1 = 1 
+THEN
+  var2 = var2 + 3;
+ELSE 
+  var2 = var2 - 2;
+*)
+definition test_statement4 :: "stmt" where
+"test_statement4 = stmt.Comb
+  (stmt.AssignSt (common_var.Symbolic ''var1'',
+    expr.Binary (binary_op.Sum) (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 1))))
+  (stmt.IfSt 
+    (expr.Binary binary_op.Eq (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 1)))
+    (stmt.AssignSt (common_var.Symbolic ''var2'',
+      expr.Binary (binary_op.Sum) (expr.SymbolicVar ''var2'') (expr.Const (const.Nat 3))))
+    (stmt.AssignSt (common_var.Symbolic ''var2'',
+      expr.Binary (binary_op.Sub) (expr.SymbolicVar ''var2'') (expr.Const (const.Nat 2)))))"
+
+lemma "(statement_result.Continue,test_ms4)\<turnstile>test_statement4 \<longrightarrow> (statement_result.Continue,test_ms6)"
+  apply (simp add:test_statement4_def 
+                test_ms4_def test_process_state4_def test_program_state4_def
+                test_ms6_def test_process_state6_def test_program_state6_def)
+  apply (rule Comb)
+   apply (rule AssignS)
+    apply (rule BinOp)
+      apply (rule Var)
+  apply (auto)
+   apply (rule Const)
+   apply (auto)
+  apply (simp add: fmupd_reorder_neq Nat.One_nat_def)
+  apply (rule If)
+   apply (rule BinOp)
+     apply (rule Var)
+     apply (auto)
+   apply (rule Const)
+   apply (auto)
+  apply (rule AssignS)
+   apply (rule BinOp)
+     apply (rule Var)
+     apply (auto)
+   apply (rule Const)
+  apply (auto)
+  done
+
+definition test_process_state7 :: "process_state" where
+"test_process_state7 = 
+  ([stacked_proc_var.Var (fmupd 
+                            ''var2'' 
+                            (stacked_var_init.Symbolic (basic_post_type.Nat 0) None)
+                          (fmupd 
+                            ''var1'' 
+                            (stacked_var_init.Symbolic (basic_post_type.Nat 6) None) 
+                          fmempty))],
+  ''state1'',
+  ''state1'',
+  proc_status.Active, 
+  time.Time 0 0 0 0 0)"
+definition test_program_state7 :: "program_state" where
+"test_program_state7 = 
+  ([],
+  (fmupd
+    ''process1''
+    test_process_state7
+    fmempty),
+  ''process1'')"
+definition test_ms7 :: "model_state" where
+"test_ms7 = model_state.ST
+  []
+  ((fmupd
+    ''program1''
+    test_program_state7
+    fmempty),''program1'')
+  []
+  []"
+
+definition statement5 :: "statement" where
+"statement5 = statement.IterSt (iter_statement.RepeatSt
+  [(statement.AssignSt (common_var.Symbolic ''var1'', (expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2)))))]
+  (expr.Binary binary_op.More (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 5))))"
+
+lemma "(statement_result.Continue,test_ms4)\<turnstile> statement_to_stmt (statement5) \<longrightarrow> (statement_result.Continue,test_ms7)"
+  apply (auto simp add: statement5_def statement_to_stmt.elims
+                test_ms4_def test_process_state4_def test_program_state4_def
+                test_ms7_def test_process_state7_def test_program_state7_def)
+  apply (rule Comb)
+
 (*
 fmupd ''program1''
      ([],

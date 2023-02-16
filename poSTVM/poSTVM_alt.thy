@@ -345,8 +345,7 @@ fun exec_sev_statements :: "nat \<Rightarrow> statement_stack \<Rightarrow> mode
     statement_result.Break \<Rightarrow> (exec_sev_statements n (skip_after_break other) new_st) |
     statement_result.Continue \<Rightarrow> (exec_sev_statements n other new_st) |
     _ \<Rightarrow> (new_st,st_res)))"
-| "exec_sev_statements (Suc n) ((statement_op.WhileStatement exp)#(statement_op.StatementList loc_stack)#other) =
-    "
+
 
 
 end

@@ -108,7 +108,24 @@ print_theorems
 
 inductive eval_state :: "[model_state,stacked_state,statement_result * model_state] \<Rightarrow> bool" ("_ \<turnstile> _ : _") where
     XcptState : "st\<turnstile>state:(res,st)"   
-  | Base : "\<lbrakk>(statement_result.Continue,st)\<turnstile>stm\<longrightarrow>(res,st1)\<rbrakk> \<Longrightarrow> st \<turnstile>(name,looped,stm,timeout_op):(res,st1)"
+  | StateStep : "\<lbrakk>(statement_result.Continue,st)\<turnstile>stm\<longrightarrow>(res,st1);
+                  (res,st2) = (case res of 
+                                statement_result.Continue \<Rightarrow> 
+                                (case timeout_op of
+                                  None \<Rightarrow> (res,st1)
+                                | (Some timeout) \<Rightarrow> (res, set_timeout st1 timeout))
+                              | (_) \<Rightarrow> (res,st1))\<rbrakk> \<Longrightarrow> st \<turnstile>(name,looped,stm,timeout_op):(res,st2)"
+                                           
+inductive eval_process :: "[model_state,stacked_process,model_state] \<Rightarrow> bool" ("_\<turnstile>_\<Rightarrow>_") where
+    XcptProcess : "st \<turnstile>proc \<Rightarrow> st"
+  | ProcStep : "\<lbrakk> st\<turnstile>(get_state_by_name state_list (get_cur_proc_state_name st)) :(res,st1);
+                  st2 = (case res of 
+                          statement_result.Continue \<Rightarrow> st1
+                        | statement_result.Exit \<Rightarrow> stop_same_process st1
+                        | statement_result.Return \<Rightarrow> st1
+                        | statement_result.NextState \<Rightarrow> (set_state st1 (get_next_state_name state_list (get_cur_proc_state_name st))))\<rbrakk> \<Longrightarrow> 
+                st\<turnstile>(name,var_list,state_list) \<Rightarrow> st2"
+  
 
 
 (*

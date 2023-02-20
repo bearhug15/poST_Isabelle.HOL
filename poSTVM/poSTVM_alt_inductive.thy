@@ -2,7 +2,7 @@ theory poSTVM_alt_inductive
   imports 
     "~~/poST/poSTVM/poSTVM_state_alt" 
 begin
-datatype statement_result =  Continue | Exit | Return | NextState
+datatype statement_result =  Continue | Exit | Return | NextState | Reset
 
 
 
@@ -39,8 +39,7 @@ inductive
   eval :: "[model_state, expr, basic_post_type] \<Rightarrow> bool" ("_ \<turnstile> _ \<rightarrow> _") and
   exec :: "[statement_result * model_state,stmt,statement_result * model_state] \<Rightarrow> bool" ("_ \<turnstile> _ \<longrightarrow> _")
   where
-    XcptE : "st\<turnstile>exp\<rightarrow>val"
-  | BinOp : "\<lbrakk>st\<turnstile>exp1\<rightarrow>val1;
+    BinOp : "\<lbrakk>st\<turnstile>exp1\<rightarrow>val1;
               st\<turnstile>exp2\<rightarrow>val2;
               val = binary_op_exec bin_op val1 val2 \<rbrakk> \<Longrightarrow>
              st\<turnstile>expr.Binary bin_op exp1 exp2\<rightarrow>val"
@@ -59,7 +58,6 @@ inductive
   | PSE : "\<lbrakk>val = check_proc_status st p_name p_status\<rbrakk>\<Longrightarrow>
           st\<turnstile>expr.ProcStatEpxr p_name p_status\<rightarrow>val "
 
-  | XcptS : "st\<turnstile>s\<longrightarrow>st "
   | Blank : "(res,st)\<turnstile>stmt.Blank\<longrightarrow>(res,st)"
   | Comb : "\<lbrakk>st\<turnstile>s1\<longrightarrow>st_res1;
              (st_res1)\<turnstile>(case (fst st_res1) of
@@ -72,7 +70,7 @@ inductive
   | LoopF : "\<lbrakk>(snd st)\<turnstile>exp\<rightarrow>val; \<not>(basic_post_type_to_bool val)\<rbrakk>\<Longrightarrow>
             st\<turnstile>stmt.WhileSt exp s\<longrightarrow>st"
   | LoopT : "\<lbrakk>(snd st)\<turnstile>exp\<rightarrow>val; (basic_post_type_to_bool val);
-              st\<turnstile>s\<longrightarrow>st1;st\<turnstile>stmt.WhileSt exp s\<longrightarrow>st2\<rbrakk>\<Longrightarrow>
+              st\<turnstile>s\<longrightarrow>st1;st1\<turnstile>stmt.WhileSt exp s\<longrightarrow>st2\<rbrakk>\<Longrightarrow>
             st\<turnstile>stmt.WhileSt exp s\<longrightarrow>st2"
   | AssignS : "\<lbrakk>(snd st)\<turnstile>exp\<rightarrow>val;
                 st1 = (set_symbvar (snd st) var_name val)\<rbrakk>\<Longrightarrow>
@@ -101,31 +99,59 @@ inductive
                         None \<Rightarrow> (statement_result.NextState, (snd st))
                       | Some name \<Rightarrow> (statement_result.Return, set_state (snd st) name))\<rbrakk>\<Longrightarrow>
                 st\<turnstile>stmt.SetStateSt st_name_option\<longrightarrow>st2"
-  | Reset : "\<lbrakk>st2 = (statement_result.Continue, (reset_timer (snd st)))\<rbrakk>\<Longrightarrow>
-            st\<turnstile>stmt.ResetSt\<longrightarrow>st2"
+  | Reset : "st\<turnstile>stmt.ResetSt\<longrightarrow>(statement_result.Reset, snd st)"
 
 print_theorems
-
+(*
+declare eval.simps [simp]
+declare exec.simps [simp]*)
+declare BinOp [simp]
+declare UnOp [simp]
+declare Var [simp]
+declare ArrayVar [simp]
+declare PSE [simp]
+declare Blank [simp]
+declare Comb [simp]
+declare If [simp]
+declare LoopF [simp]
+declare LoopT [simp]
+declare AssignS [simp]
+declare AssignA [simp]
+declare Return [simp]
+declare Exit [simp]
+declare Process [simp]
+declare SetState [simp]
+declare Reset [simp]
+(**)
 inductive eval_state :: "[model_state,stacked_state,statement_result * model_state] \<Rightarrow> bool" ("_ \<turnstile> _ : _") where
-    XcptState : "st\<turnstile>state:(res,st)"   
-  | StateStep : "\<lbrakk>(statement_result.Continue,st)\<turnstile>stm\<longrightarrow>(res,st1);
+    StateStep : "\<lbrakk>(statement_result.Continue,st)\<turnstile>stm\<longrightarrow>(res,st1);
                   (res,st2) = (case res of 
                                 statement_result.Continue \<Rightarrow> 
                                 (case timeout_op of
                                   None \<Rightarrow> (res,st1)
                                 | (Some timeout) \<Rightarrow> (res, set_timeout st1 timeout))
-                              | (_) \<Rightarrow> (res,st1))\<rbrakk> \<Longrightarrow> st \<turnstile>(name,looped,stm,timeout_op):(res,st2)"
-                                           
+                              | (_) \<Rightarrow> (res,st1))\<rbrakk> \<Longrightarrow> 
+                st \<turnstile>(name,looped,stm,timeout_op):(res,st2)"
+
+(*TO DO RESET*)
 inductive eval_process :: "[model_state,stacked_process,model_state] \<Rightarrow> bool" ("_\<turnstile>_\<Rightarrow>_") where
-    XcptProcess : "st \<turnstile>proc \<Rightarrow> st"
-  | ProcStep : "\<lbrakk> st\<turnstile>(get_state_by_name state_list (get_cur_proc_state_name st)) :(res,st1);
+    ProcStep : "\<lbrakk> new_st = (set_cur_proc_name st name);
+                  new_st\<turnstile>(get_state_by_name state_list (get_cur_proc_state_name new_st)) :(res,st1);
                   st2 = (case res of 
                           statement_result.Continue \<Rightarrow> st1
                         | statement_result.Exit \<Rightarrow> stop_same_process st1
                         | statement_result.Return \<Rightarrow> st1
                         | statement_result.NextState \<Rightarrow> (set_state st1 (get_next_state_name state_list (get_cur_proc_state_name st))))\<rbrakk> \<Longrightarrow> 
                 st\<turnstile>(name,var_list,state_list) \<Rightarrow> st2"
-  
+
+
+(*
+(*add var distribution*)
+inductive eval_program :: "[model_state,stacked_program,model_state] \<Rightarrow> bool" ("_\<turnstile>_\<Longrightarrow>_") where
+    ProgStep : "\<lbrakk>new_st = (set_cur_prog_name st name); 
+                  st2 = (foldl (\<lambda>proc st1. st1 ) new_st process_list)\<rbrakk>\<Longrightarrow> 
+              st\<turnstile>(name,var_list,process_list) \<Longrightarrow>st2"
+*)
 
 
 (*

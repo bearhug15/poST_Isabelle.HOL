@@ -63,7 +63,7 @@ definition test_statement1 :: "stmt" where
 "test_statement1 = stmt.AssignSt (common_var.Symbolic ''var1'',expr.Const (const.Nat 1))"
 
 lemma "(statement_result.Continue,test_ms1)\<turnstile>test_statement1\<longrightarrow>(statement_result.Continue,test_ms2)"
-  apply (simp add: test_statement1_def 
+  apply (auto simp add: test_statement1_def 
                 test_ms1_def 
                 test_ms2_def 
                 test_process_state1_def
@@ -198,6 +198,8 @@ lemma "(fmupd 2 3 (fmupd 1 2 fmempty)) = (fmupd 2 3 (fmupd 1 2 (fmupd 2 1 (fmupd
   apply (metis fmupd_idem fmupd_reorder_neq)
   done
 
+declare fmupd_reorder_neq [simp]
+
 lemma "(statement_result.Continue,test_ms4)\<turnstile>test_statement3\<longrightarrow>(statement_result.Continue,test_ms5)"
   apply (simp add: test_statement3_def 
                 test_ms4_def 
@@ -219,7 +221,6 @@ lemma "(statement_result.Continue,test_ms4)\<turnstile>test_statement3\<longrigh
      apply (auto)
    apply (rule Const)
    apply (auto)
-  apply (auto simp add: fmupd_reorder_neq Num.numeral_2_eq_2)
   done
 (**)
 
@@ -286,7 +287,6 @@ lemma "(statement_result.Continue,test_ms4)\<turnstile>test_statement4 \<longrig
   apply (auto)
    apply (rule Const)
    apply (auto)
-  apply (simp add: fmupd_reorder_neq Nat.One_nat_def)
   apply (rule If)
    apply (rule BinOp)
      apply (rule Var)
@@ -331,17 +331,125 @@ definition test_ms7 :: "model_state" where
     fmempty),''program1'')
   []
   []"
-
+(*
 definition statement5 :: "statement" where
 "statement5 = statement.IterSt (iter_statement.RepeatSt
   [(statement.AssignSt (common_var.Symbolic ''var1'', (expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2)))))]
   (expr.Binary binary_op.More (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 5))))"
+(*
+definition test_statement5 :: "stmt" where 
+"test_statement5 = statement_to_stmt (statement5)" 
 
-lemma "(statement_result.Continue,test_ms4)\<turnstile> statement_to_stmt (statement5) \<longrightarrow> (statement_result.Continue,test_ms7)"
-  apply (auto simp add: statement5_def statement_to_stmt.elims
+value "test_statement5"
+*)
+definition test_statement5 :: "stmt" where
+"test_statement5 = 
+Comb
+  (Comb
+    (stmt.AssignSt
+      (common_var.Symbolic ''var1'', expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2))))
+    Blank)
+  (stmt.WhileSt (expr.Binary More (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 5)))
+    (Comb
+      (stmt.AssignSt
+        (common_var.Symbolic ''var1'', expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2))))
+      Blank))"
+
+lemma "(statement_result.Continue,test_ms4)\<turnstile> test_statement5 \<longrightarrow> (statement_result.Continue,test_ms7)"
+  apply (auto simp add: test_statement5_def 
                 test_ms4_def test_process_state4_def test_program_state4_def
                 test_ms7_def test_process_state7_def test_program_state7_def)
   apply (rule Comb)
+   apply (rule Comb)
+    apply (rule AssignS)
+     apply (rule BinOp)
+       apply (rule Var)
+       apply (auto)
+    apply (rule Const)
+    apply (auto)
+   apply (rule Blank)
+  apply (auto)
+  apply (rule LoopT)
+     apply (rule BinOp)
+       apply (rule Var)
+       apply (auto)
+     apply (rule Const)
+     apply (auto)
+
+  done
+*)
+
+definition statement6 :: "statement" where
+"statement6 = statement.IterSt (iter_statement.RepeatSt
+  [(statement.AssignSt (common_var.Symbolic ''var1'', (expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2)))))]
+  (expr.Binary binary_op.Less (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 5))))"
+(*
+definition test_statement6 :: "stmt" where 
+"test_statement6 = statement_to_stmt (statement5)" 
+
+value "test_statement6"
+*)
+definition test_statement6 :: "stmt" where
+"test_statement6 = 
+Comb (Comb
+  (Comb
+    (stmt.AssignSt
+      (common_var.Symbolic ''var1'', expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2))))
+    Blank)
+  (stmt.WhileSt (expr.Binary Less (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 4)))
+    (Comb
+      (stmt.AssignSt
+        (common_var.Symbolic ''var1'', expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2))))
+      Blank)))
+  (stmt.AssignSt
+        (common_var.Symbolic ''var1'', expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2))))"
+
+
+
+lemma "(statement_result.Continue,test_ms4)\<turnstile> test_statement6 \<longrightarrow> (statement_result.Continue,test_ms7)"
+  apply (auto simp add: test_statement6_def 
+                test_ms4_def test_process_state4_def test_program_state4_def
+                test_ms7_def test_process_state7_def test_program_state7_def)
+  apply (rule Comb)
+  apply (rule Comb)
+   apply (rule Comb)
+    apply (rule AssignS)
+     apply (rule BinOp)
+       apply (rule Var)
+       apply (auto)
+    apply (rule Const)
+    apply (auto)
+   apply (rule Blank)
+  apply (auto)
+
+  apply (rule LoopT)
+   apply (rule BinOp)
+       apply (rule Var)
+       apply (auto)
+     apply (rule Const)
+      apply (auto)
+    apply (rule Comb)
+  apply (rule AssignS)
+     apply (rule BinOp)
+       apply (rule Var)
+       apply (auto)
+    apply (rule Const)
+     apply (auto)
+    apply (rule Blank)
+
+  apply (rule LoopF)
+    apply (rule BinOp)
+       apply (rule Var)
+       apply (auto)
+     apply (rule Const)
+    apply (auto)
+  apply (rule AssignS)
+     apply (rule BinOp)
+       apply (rule Var)
+       apply (auto)
+    apply (rule Const)
+   apply (auto)
+  done
 
 (*
 fmupd ''program1''

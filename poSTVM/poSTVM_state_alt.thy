@@ -62,6 +62,11 @@ definition get_cur_prog_state :: "model_state \<Rightarrow> program_state" where
         Some(p_state) \<Rightarrow> p_state))"
 declare get_cur_prog_state_def [simp]
 
+text "Getting current process state name"
+definition get_cur_proc_state_name :: "model_state \<Rightarrow> state_name" where
+"get_cur_proc_state_name st = fst (snd (get_cur_proc_state_by_prog (get_cur_prog_state st)))"
+declare get_cur_proc_state_name_def [simp]
+
 text "Getting program state by program name from model state"
 definition get_proc_state_by_prog :: "program_state \<Rightarrow> process_name \<Rightarrow> process_state" where
 "get_proc_state_by_prog ps var_name = (case (fmlookup (fst (snd ps)) var_name) of Some (st) \<Rightarrow> st)"
@@ -72,6 +77,8 @@ definition get_proc_state :: "model_state \<Rightarrow> process_name \<Rightarro
 "get_proc_state st var_name =
   get_proc_state_by_prog (get_cur_prog_state st) var_name"
 declare get_proc_state_def [simp]
+
+
 
 text "Getting process vars list of current process of current program from model state"
 definition get_cur_var_list :: "model_state \<Rightarrow> stacked_proc_var list" where
@@ -189,6 +196,27 @@ definition check_proc_status :: "model_state \<Rightarrow> process_name \<Righta
     in (basic_post_type.Bool (proc_status_is cur_proc_stat proc_stat)))"
 declare check_proc_status_def [simp]
 
+text "Setting current process name in current program"
+definition set_cur_proc_name :: "model_state \<Rightarrow> process_name \<Rightarrow> model_state" where
+"set_cur_proc_name st name = 
+  (case st of
+    (ST g_list (pr_map,pr_name) fb_list f_list) \<Rightarrow>
+      (let (var_list, p_map,p_name) = (get_cur_prog_state (ST g_list (pr_map,pr_name) fb_list f_list))
+           
+        in (ST g_list 
+          ((fmupd 
+              pr_name 
+              (var_list,p_map,name)
+              pr_map),
+            pr_name) fb_list f_list)))"
+
+text "Setting current program name"
+definition set_cur_prog_name :: "model_state \<Rightarrow> program_name \<Rightarrow> model_state" where
+"set_cur_prog_name st name =
+  (case st of
+    (ST g_list (pr_map,pr_name) fb_list f_list) \<Rightarrow>
+      (ST g_list (pr_map,name) fb_list f_list))"
+
 text "Resetting timer in current process in model state"
 definition reset_timer :: "model_state \<Rightarrow> model_state" where
 "reset_timer st = 
@@ -201,7 +229,7 @@ definition reset_timer :: "model_state \<Rightarrow> model_state" where
               pr_name 
               (var_list,(fmupd 
                  p_name 
-                 (process_vars, current_state, start_state, process_status, t)
+                 (process_vars, current_state, start_state, process_status, time.Time 0 0 0 0 0)
                  p_map),p_name)
               pr_map),
             pr_name) fb_list f_list)))"
@@ -318,7 +346,7 @@ definition reset_process :: "model_state \<Rightarrow> process_name \<Rightarrow
             p_name
             (var_list,(fmupd 
                  target_proc_name
-                 ((proc_var_list), start_st_name,start_st_name, proc_stat, cur_time)
+                 ((proc_var_list), start_st_name,start_st_name, proc_status.Active, time.Time 0 0 0 0 0)
                  proc_map), 
               proc_name) 
             ps_map),
@@ -342,7 +370,7 @@ definition reset_same_process :: "model_state \<Rightarrow> model_state" where
             p_name
             (var_list,(fmupd 
                  proc_name
-                 ((proc_var_list), start_st_name,start_st_name, proc_stat, cur_time)
+                 ((proc_var_list), start_st_name,start_st_name, proc_status.Active, time.Time 0 0 0 0 0)
                  proc_map), 
               proc_name) 
             ps_map),
@@ -506,5 +534,7 @@ definition set_timeout_from_state :: "model_state \<Rightarrow> stacked_state \<
         function_block_decl_list 
         function_decl_list)))"
 declare set_timeout_from_state_def [simp]
+
+
 
 end

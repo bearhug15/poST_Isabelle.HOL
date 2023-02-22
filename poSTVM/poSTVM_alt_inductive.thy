@@ -2,7 +2,7 @@ theory poSTVM_alt_inductive
   imports 
     "~~/poST/poSTVM/poSTVM_state_alt" 
 begin
-datatype statement_result =  Continue | Exit | Return | NextState | Reset
+datatype statement_result =  Continue | Exit | Return | Reset
 
 
 
@@ -95,10 +95,10 @@ inductive
                               None \<Rightarrow> (statement_result.Return, error_same_process (snd st))
                             | Some name \<Rightarrow> (statement_result.Continue, error_process (snd st) name)))\<rbrakk>\<Longrightarrow>
                 st\<turnstile>stmt.ProcessSt ps\<longrightarrow>st2"
-  | SetState : "\<lbrakk>st = (case st_name_option of
-                        None \<Rightarrow> (statement_result.NextState, (snd st))
-                      | Some name \<Rightarrow> (statement_result.Return, set_state (snd st) name))\<rbrakk>\<Longrightarrow>
-                st\<turnstile>stmt.SetStateSt st_name_option\<longrightarrow>st2"
+  | SetState : "\<lbrakk>st1 = (case st_name_option of
+                        None \<Rightarrow> (statement_result.Continue, set_next_state_next (snd st))
+                      | Some name \<Rightarrow> (statement_result.Continue, set_state (snd st) name))\<rbrakk>\<Longrightarrow>
+                st\<turnstile>stmt.SetStateSt st_name_option\<longrightarrow>st1"
   | Reset : "st\<turnstile>stmt.ResetSt\<longrightarrow>(statement_result.Reset, snd st)"
 
 print_theorems
@@ -125,13 +125,18 @@ declare Reset [simp]
 (**)
 inductive eval_state :: "[model_state,stacked_state,statement_result * model_state] \<Rightarrow> bool" ("_ \<turnstile> _ : _") where
     StateStep : "\<lbrakk>(statement_result.Continue,st)\<turnstile>stm\<longrightarrow>(res,st1);
-                  (res,st2) = (case res of 
-                                statement_result.Continue \<Rightarrow> 
-                                (case timeout_op of
-                                  None \<Rightarrow> (res,st1)
-                                | (Some timeout) \<Rightarrow> (res, set_timeout st1 timeout))
-                              | (_) \<Rightarrow> (res,st1))\<rbrakk> \<Longrightarrow> 
+                  (case res of 
+                    statement_result.Continue \<Rightarrow> 
+                      (case timeout_op of
+                        None \<Rightarrow> (res,st2) = (res,st1)
+                      | (Some timeout) \<Rightarrow> 
+                          (case (extr_timeout_stmt st1 timeout) of 
+                            None \<Rightarrow> (res,st2) = (res,st1)
+                          | (Some stm) \<Rightarrow> ((statement_result.Continue,st1)\<turnstile>stm\<longrightarrow>(res,st2))))
+                  | (_) \<Rightarrow> (res,st2) = (res,st1))\<rbrakk> \<Longrightarrow> 
                 st \<turnstile>(name,looped,stm,timeout_op):(res,st2)"
+
+
 
 (*TO DO RESET*)
 inductive eval_process :: "[model_state,stacked_process,model_state] \<Rightarrow> bool" ("_\<turnstile>_\<Rightarrow>_") where
@@ -140,9 +145,9 @@ inductive eval_process :: "[model_state,stacked_process,model_state] \<Rightarro
                   st2 = (case res of 
                           statement_result.Continue \<Rightarrow> st1
                         | statement_result.Exit \<Rightarrow> stop_same_process st1
-                        | statement_result.Return \<Rightarrow> st1
-                        | statement_result.NextState \<Rightarrow> (set_state st1 (get_next_state_name state_list (get_cur_proc_state_name st))))\<rbrakk> \<Longrightarrow> 
-                st\<turnstile>(name,var_list,state_list) \<Rightarrow> st2"
+                        | statement_result.Return \<Rightarrow> st1);
+                  st3 = (process_vars_distribution (set_into_next_state st2))\<rbrakk> \<Longrightarrow> 
+                st\<turnstile>(name,var_list,state_list) \<Rightarrow> st3"
 
 
 (*

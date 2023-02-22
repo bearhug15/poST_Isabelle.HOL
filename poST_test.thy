@@ -2,6 +2,7 @@ theory poST_test
   imports "~~/poST/poSTVM/poSTVM_alt_inductive"
 begin
 
+(*Тесты не работают изза изменения model_state*)
 value "fmempty :: (nat,nat) fmap"
 definition test_process_state1 :: "process_state" where
 "test_process_state1 = 

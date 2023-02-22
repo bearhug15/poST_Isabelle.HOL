@@ -5,8 +5,7 @@ datatype proc_status =
 Active |
 Inactive |
 Stop |
-Error |
-Timeout time
+Error 
 
 datatype unary_op = Not | Minus
 datatype binary_op = And | 

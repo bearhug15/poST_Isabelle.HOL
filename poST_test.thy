@@ -2,21 +2,18 @@ theory poST_test
   imports "~~/poST/poSTVM/poSTVM_alt_inductive"
 begin
 
-(*Тесты не работают изза изменения model_state*)
 value "fmempty :: (nat,nat) fmap"
 definition test_process_state1 :: "process_state" where
 "test_process_state1 = 
-  ([stacked_proc_var.Var (fmupd 
-                            ''var1'' 
-                            (stacked_var_init.Symbolic (basic_post_type.Nat 0) None) 
-                          fmempty)],
+  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 0) None))],
   ''state1'',
   ''state1'',
+  [''state1''],
   proc_status.Active, 
   time.Time 0 0 0 0 0)"
 definition test_program_state1 :: "program_state" where
 "test_program_state1 = 
-  ([],
+  (fmap_of_list [],
   (fmupd
     ''process1''
     test_process_state1
@@ -34,17 +31,15 @@ definition test_ms1 :: "model_state" where
 
 definition test_process_state2 :: "process_state" where
 "test_process_state2 = 
-  ([stacked_proc_var.Var (fmupd 
-                            ''var1'' 
-                            (stacked_var_init.Symbolic (basic_post_type.Nat 1) None) 
-                          fmempty)],
+  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 1) None))],
   ''state1'',
   ''state1'',
+  [''state1''],
   proc_status.Active, 
   time.Time 0 0 0 0 0)"
 definition test_program_state2 :: "program_state" where
 "test_program_state2 = 
-  ([],
+  (fmap_of_list [],
   (fmupd
     ''process1''
     test_process_state2
@@ -78,17 +73,15 @@ lemma "(statement_result.Continue,test_ms1)\<turnstile>test_statement1\<longrigh
 
 definition test_process_state3 :: "process_state" where
 "test_process_state3 = 
-  ([stacked_proc_var.Var (fmupd 
-                            ''var1'' 
-                            (stacked_var_init.Symbolic (basic_post_type.Nat 2) None) 
-                          fmempty)],
+  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 2) None))],
   ''state1'',
   ''state1'',
+  [''state1''],
   proc_status.Active, 
   time.Time 0 0 0 0 0)"
 definition test_program_state3 :: "program_state" where
 "test_program_state3 = 
-  ([],
+  (fmap_of_list [],
   (fmupd
     ''process1''
     test_process_state3
@@ -126,20 +119,16 @@ done
 (* Don't work now*)
 definition test_process_state4 :: "process_state" where
 "test_process_state4 = 
-  ([stacked_proc_var.Var (fmupd 
-                            ''var2'' 
-                            (stacked_var_init.Symbolic (basic_post_type.Nat 0) None)
-                          (fmupd 
-                            ''var1'' 
-                            (stacked_var_init.Symbolic (basic_post_type.Nat 0) None) 
-                          fmempty))],
+  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 0) None)),
+                 (''var2'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 0) None))],
   ''state1'',
   ''state1'',
+  [''state1''],
   proc_status.Active, 
   time.Time 0 0 0 0 0)"
 definition test_program_state4 :: "program_state" where
 "test_program_state4 = 
-  ([],
+  (fmap_of_list[],
   (fmupd
     ''process1''
     test_process_state4
@@ -157,20 +146,16 @@ definition test_ms4 :: "model_state" where
 
 definition test_process_state5 :: "process_state" where
 "test_process_state5 = 
-  ([stacked_proc_var.Var (fmupd 
-                            ''var2'' 
-                            (stacked_var_init.Symbolic (basic_post_type.Nat 2) None)
-                          (fmupd 
-                            ''var1'' 
-                            (stacked_var_init.Symbolic (basic_post_type.Nat 1) None) 
-                          fmempty))],
+  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 1) None)),
+                 (''var2'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 2) None))],
   ''state1'',
   ''state1'',
+  [''state1''],
   proc_status.Active, 
   time.Time 0 0 0 0 0)"
 definition test_program_state5 :: "program_state" where
 "test_program_state5 = 
-  ([],
+  (fmap_of_list[],
   (fmupd
     ''process1''
     test_process_state5
@@ -229,20 +214,16 @@ find_theorems "(Suc 0)"
 
 definition test_process_state6 :: "process_state" where
 "test_process_state6 = 
-  ([stacked_proc_var.Var (fmupd 
-                            ''var2'' 
-                            (stacked_var_init.Symbolic (basic_post_type.Nat 3) None)
-                          (fmupd 
-                            ''var1'' 
-                            (stacked_var_init.Symbolic (basic_post_type.Nat 1) None) 
-                          fmempty))],
+  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 1) None)),
+                 (''var2'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 3) None))],
   ''state1'',
   ''state1'',
+  [''state1''],
   proc_status.Active, 
   time.Time 0 0 0 0 0)"
 definition test_program_state6 :: "program_state" where
 "test_program_state6 = 
-  ([],
+  (fmap_of_list [],
   (fmupd
     ''process1''
     test_process_state6
@@ -304,20 +285,16 @@ lemma "(statement_result.Continue,test_ms4)\<turnstile>test_statement4 \<longrig
 
 definition test_process_state7 :: "process_state" where
 "test_process_state7 = 
-  ([stacked_proc_var.Var (fmupd 
-                            ''var2'' 
-                            (stacked_var_init.Symbolic (basic_post_type.Nat 0) None)
-                          (fmupd 
-                            ''var1'' 
-                            (stacked_var_init.Symbolic (basic_post_type.Nat 6) None) 
-                          fmempty))],
+  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 6) None)),
+                 (''var2'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 0) None))],
   ''state1'',
   ''state1'',
+  [''state1''],
   proc_status.Active, 
   time.Time 0 0 0 0 0)"
 definition test_program_state7 :: "program_state" where
 "test_program_state7 = 
-  ([],
+  (fmap_of_list [],
   (fmupd
     ''process1''
     test_process_state7

@@ -79,8 +79,7 @@ fun initialize_stacked_vars :: "model_state \<Rightarrow> stacked_vars \<Rightar
     vars) "
 
 text "Initialization of proc_vars"
-fun initialize_stacked_proc_vars :: "model_state \<Rightarrow> stacked_proc_var list \<Rightarrow> stacked_proc_var list" where
-"initialize_stacked_proc_vars _ [] = []" |
+definition initialize_stacked_proc_vars :: "model_state \<Rightarrow> stacked_proc_vars \<Rightarrow> stacked_proc_vars" where
 "initialize_stacked_proc_vars st (proc_var#other) = 
   ((case proc_var of
     (stacked_proc_var.Var stacked_vars) \<Rightarrow> (stacked_proc_var.Var (initialize_stacked_vars st stacked_vars))|

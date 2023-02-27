@@ -695,4 +695,33 @@ definition program_vars_distribution :: "model_state \<Rightarrow> model_state" 
       function_block_decl_list function_decl_list)))"
 declare program_vars_distribution_def [simp]
 
+definition add_time_to_processes :: "model_state \<Rightarrow> time \<Rightarrow> model_state" where
+"add_time_to_processes st t = 
+  (case st of (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
+    (let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of Some(p_state) \<Rightarrow> p_state)
+  in (ST 
+        global_var_decl_list 
+        ((fmupd 
+            p_name
+            (var_list,
+              (fmmap 
+              (\<lambda>(v1,v2,v3,v4,v5,v6).(v1,v2,v3,v4,v5,time_sum v6 t))
+              proc_map), 
+              proc_name) 
+            ps_map),
+          p_name) 
+        function_block_decl_list 
+        function_decl_list)))"
+
+definition is_process_active :: "model_state \<Rightarrow> process_name \<Rightarrow> bool" where
+"is_process_active st name = 
+  (case st of (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
+    (let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of Some(p_state) \<Rightarrow> p_state);
+         (_,_,_,_,status,_) = (case (fmlookup proc_map name) of Some(proc_state) \<Rightarrow> proc_state)
+    in (proc_status_is status proc_status.Active)))"
+declare is_process_active_def [simp]
+
+definition filter_active_processes :: "model_state \<Rightarrow> stacked_process list \<Rightarrow> stacked_process list" where
+"filter_active_processes st p_list = (filter (\<lambda>(name,_,_). is_process_active st name) p_list)"
+declare filter_active_processes_def [simp]
 end

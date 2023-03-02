@@ -147,25 +147,28 @@ inductive eval_process :: "[model_state,stacked_process,model_state] \<Rightarro
                   st3 = (process_vars_distribution (set_into_next_state st2))\<rbrakk> \<Longrightarrow> 
                 st\<turnstile>(name,var_list,state_list) \<Rightarrow> st3"
   | ProcNil : "st\<turnstile>[][\<Rightarrow>]st"
-  | ProcCons : "\<lbrakk>st\<turnstile>pr\<Rightarrow>st1;
-                 (process_vars_distribution st1)\<turnstile>other[\<Rightarrow>]st2 \<rbrakk> \<Longrightarrow> 
+  | ProcCons : "\<lbrakk>(if (is_process_active st (fst pr)) then st\<turnstile>pr\<Rightarrow>st1 else st\<turnstile>[][\<Rightarrow>]st1);
+                 st1\<turnstile>other[\<Rightarrow>]st2 \<rbrakk> \<Longrightarrow> 
                 st\<turnstile>(pr#other)[\<Rightarrow>]st2"
 
 
 inductive eval_program :: "[model_state,stacked_program,model_state] \<Rightarrow> bool" ("_\<turnstile>_\<Longrightarrow>_") and
           eval_programs :: "[model_state,stacked_program list,model_state] \<Rightarrow> bool" ("_\<turnstile>_[\<Longrightarrow>]_") where
     ProgStep : "\<lbrakk>new_st = (set_cur_prog_name st name);
-                 new_st\<turnstile>(filter_active_processes new_st process_list)[\<Rightarrow>]st1\<rbrakk>\<Longrightarrow> 
-              st\<turnstile>(name,var_list,process_list) \<Longrightarrow>st1"
+                 new_st\<turnstile>process_list[\<Rightarrow>]st1;
+                 st2 = process_vars_distribution st1\<rbrakk>\<Longrightarrow> 
+              st\<turnstile>(name,var_list,process_list) \<Longrightarrow>st2"
   | ProgNil : "st\<turnstile>[][\<Longrightarrow>]st"
   | ProgCons : "\<lbrakk>st\<turnstile>pr\<Longrightarrow>st1;
-                 (process_vars_distribution st1)\<turnstile>other[\<Longrightarrow>]st2\<rbrakk> \<Longrightarrow> 
+                 st1\<turnstile>other[\<Longrightarrow>]st2\<rbrakk> \<Longrightarrow> 
                st\<turnstile>(pr#other)[\<Longrightarrow>]st2"
 
 
-inductive eval_model :: "[model_state,stacked_model,model_state] \<Rightarrow> bool" ("_\<turnstile>_\<mapsto>_") where
-    ModelStep : "\<lbrakk>st\<turnstile>prog_list[\<Longrightarrow>]st1\<rbrakk> \<Longrightarrow>
-                st\<turnstile>(_,_,prog_list,_,_)\<mapsto>st1"
+inductive eval_model :: "[time,model_state,stacked_model,model_state] \<Rightarrow> bool" ("_:_\<turnstile>_\<mapsto>_") where
+    ModelStep : "\<lbrakk>st\<turnstile>prog_list[\<Longrightarrow>]st1;
+                  st2 = program_vars_distribution st1;
+                  st3 = add_time_to_active_processes st2 t\<rbrakk> \<Longrightarrow>
+                t:st\<turnstile>(_,_,prog_list,_,_)\<mapsto>st3"
 
 (*
 apply (simp add: const_to_basic_def

@@ -209,7 +209,7 @@ datatype stacked_prog_var =
   OutVar stacked_vars
 *)
 datatype stacked_prog_var = 
-      Var stacked_var_init
+    Var stacked_var_init
   | ExtVar stacked_var_init
   | InOutVar stacked_var_init
   | InVar stacked_var_init
@@ -330,14 +330,32 @@ type_synonym stacked_function_block = "func_block_name * stacked_func_block_var 
 
 type_synonym stacked_function = "func_name * basic_post_type * func_var list * stmt"
 
+datatype stacked_global_var =
+  Var stacked_var_init
+| Global direct_var  basic_post_type
+
+type_synonym stacked_global_vars = "(symbolic_var,stacked_global_var) fmap"
+
+definition stack_global_var :: "global_var_decl \<Rightarrow> stacked_global_vars" where
+"stack_global_var var = 
+  (case var of
+    (_,vars) \<Rightarrow> (fmmap (\<lambda>var. (case var of
+                                all_var_init_decl.Var val \<Rightarrow> stacked_global_var.Var (stack_var_init_decl val)
+                              | all_var_init_decl.GlobalVar (val1,val2) \<Rightarrow> stacked_global_var.Global val1 val2) ) vars))"
+declare stack_global_var_def [simp]
+
+definition stack_global_vars :: "global_var_decl list \<Rightarrow> stacked_global_vars" where
+"stack_global_vars vars = (fold (\<lambda>var fm. fmadd fm (stack_global_var var)) vars fmempty)"
+declare stack_global_vars_def [simp]
+
 (*TO DO stacking configuration, function blocks and functions*)
-type_synonym stacked_model = "(configuration_decl option) * (global_var_decl list) * (stacked_program list) * (function_block_decl list) * (function_decl list)"
+type_synonym stacked_model = "(configuration_decl option) * stacked_global_vars * (stacked_program list) * (function_block_decl list) * (function_decl list)"
 
 text "Converting model declaration to stacked version"
 fun stack_model :: "model \<Rightarrow> stacked_model" where
 "stack_model (conf, glob, prog_list, fb_list, f_list) = 
   (conf,
-  glob, 
+  stack_global_vars glob, 
   (map 
     (\<lambda>prog. (stack_program prog))
     prog_list),

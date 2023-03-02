@@ -15,7 +15,7 @@ text "Program state in form of program vars list, processes map, current process
 type_synonym program_state ="stacked_prog_vars * ((process_name,process_state) fmap) * process_name"
 
 text "Model state in form of global vars, programs map, current program, function blocks list, functions list"
-datatype model_state = ST "(global_var_decl list)"  "((program_name,program_state) fmap * program_name)"  "(function_block_decl list)"  "(function_decl list)"
+datatype model_state = ST stacked_global_vars  "((program_name,program_state) fmap * program_name)"  "(function_block_decl list)"  "(function_decl list)"
 
 (*TO DO add getting and setting vars not only from process vision, but program and global*)
 
@@ -432,41 +432,6 @@ definition set_state :: "model_state \<Rightarrow> state_name \<Rightarrow> mode
         function_decl_list)))"
 declare set_state_def [simp]
 
-text "Extracting new process state from stacked process"
-definition extract_process_state :: "stacked_process \<Rightarrow> process_state" where
-"extract_process_state sp  = 
-  (case sp of 
-    (proc_name, var_list,stst_list) \<Rightarrow> 
-    (let states = (map (\<lambda>(name,_,_,_). name) stst_list)
-      in (var_list, hd states, hd states, states, proc_status.Inactive, (time.Time 0 0 0 0 0))))"
-declare extract_process_state_def [simp]
-
-text "Extracting new program state from stacked program"
-definition extract_program_state :: "stacked_program \<Rightarrow> program_state" where 
-"extract_program_state sp =
-  (case sp of
-    (prog_name, var_list, st_proc_list) \<Rightarrow>
-      (let (name,_,_) = (nth st_proc_list 0);
-       proc_states = (fmap_of_list 
-                        (map 
-                          (\<lambda>(proc_name,var_list,state_list). 
-                            (proc_name,(extract_process_state (proc_name,var_list,state_list)))) 
-                          st_proc_list))
-    in (var_list,proc_states,name)))"
-declare extract_program_state_def [simp]
-
-text "Extracting new model state from stacked model"
-definition extract_model_state :: "stacked_model \<Rightarrow> model_state" where
-"extract_model_state sm =
-  (case sm of 
-    (conf, global, prog_list, fb_list, f_list) \<Rightarrow>
-(let (name, _, _) = (nth prog_list 0);
-        prog_map = (fmap_of_list
-    (map
-      (\<lambda>(name, var_list, proc_list). (name, (extract_program_state (name, var_list, proc_list))))
-      prog_list))
-  in (model_state.ST global (prog_map,name) fb_list f_list)))"
-declare extract_model_state_def [simp]
 
 fun get_timeout :: "model_state \<Rightarrow> stacked_state \<Rightarrow> time" where
 "get_timeout st ss =
@@ -597,6 +562,7 @@ definition extr_timeout_stmt :: "model_state \<Rightarrow> timeout \<Rightarrow>
      | (timeout.SymbolicVar sv stm) \<Rightarrow> (if (time_less (basic_to_time (get_symbvar_by_name st sv)) cur_time) then (Some stm) else None))))"
 declare extr_timeout_stmt_def [simp]
 
+text "Gather out and inout vars from process vars"
 definition gather_process_out_vars :: "stacked_proc_vars \<Rightarrow> stacked_proc_vars" where
 "gather_process_out_vars vars = 
   (ffold 
@@ -610,7 +576,16 @@ definition gather_process_out_vars :: "stacked_proc_vars \<Rightarrow> stacked_p
       (fset_of_fmap vars)))"
 declare gather_process_out_vars_def [simp]
 
-text "Updates In and InOut vars in process: old vars => vars to update => updated vars"
+text "Gather out and inout vars from all processes vars"
+definition gather_processes_out_vars :: "((process_name,process_state) fmap) \<Rightarrow> stacked_proc_vars" where
+"gather_processes_out_vars proc_map = 
+  ffold 
+    (\<lambda>(vars,_,_,_,_,_) var_map. fmadd (gather_process_out_vars vars) var_map) 
+    fmempty 
+    (fmran proc_map)" 
+declare gather_processes_out_vars_def [simp]
+
+text "Updates In and InOut vars in process vars: old vars => vars to update => updated vars"
 definition update_process_in_vars :: "stacked_proc_vars \<Rightarrow> stacked_proc_vars \<Rightarrow> stacked_proc_vars" where
 "update_process_in_vars old up = 
   (fmmap_keys 
@@ -627,22 +602,24 @@ definition update_process_in_vars :: "stacked_proc_vars \<Rightarrow> stacked_pr
     old)"
 declare update_process_in_vars_def [simp]
 
+text "Updates In and InOut vars in processes vars: old vars => vars to update => updated vars"
+definition update_processes_in_vars :: "((process_name,process_state) fmap) \<Rightarrow> stacked_proc_vars \<Rightarrow>((process_name,process_state) fmap)" where
+"update_processes_in_vars proc_map new_vars= 
+  (fmmap
+    (\<lambda>(proc_vars,v1,v2,v3,v4,v5). (update_process_in_vars proc_vars new_vars,v1,v2,v3,v4,v5))
+    proc_map)"
+declare update_processes_in_vars_def [simp]
+
 definition process_vars_distribution :: "model_state \<Rightarrow> model_state" where
 "process_vars_distribution st = 
   (case st of (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
     (let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of Some(p_state) \<Rightarrow> p_state);
-        (proc_var_map,st_name,next_state,state_names, proc_stat, cur_time) = (case (fmlookup proc_map proc_name) of 
-                                    Some(proc_state) \<Rightarrow> proc_state);
-        put_vars = gather_process_out_vars proc_var_map 
+        put_vars = gather_processes_out_vars proc_map 
   in (ST global_var_decl_list 
       (fmupd
         p_name
         (var_list,
-          (fmmap_keys
-            (\<lambda>name (v1,v2,v3,v4,v5,v6). 
-              ((if name = proc_name then v1 else (update_process_in_vars v1 put_vars)),
-                v2,v3,v4,v5,v6))
-            proc_map),
+          update_processes_in_vars proc_map put_vars,
           proc_name)
         ps_map
         ,p_name)
@@ -663,6 +640,15 @@ definition gather_program_out_vars :: "stacked_prog_vars \<Rightarrow> stacked_p
       (fset_of_fmap vars)))"
 declare gather_program_out_vars_def [simp]
 
+text "Gather out and inout vars from all programs vars"
+definition gather_programs_out_vars :: "((program_name,program_state) fmap) \<Rightarrow> stacked_prog_vars" where
+"gather_programs_out_vars prog_map = 
+  ffold 
+    (\<lambda>(vars,_,_) var_map. fmadd (gather_program_out_vars vars) var_map) 
+    fmempty 
+    (fmran prog_map)" 
+declare gather_programs_out_vars_def [simp]
+
 text "Updates In and InOut vars in process: old vars => vars to update => updated vars"
 definition update_program_in_vars :: "stacked_prog_vars \<Rightarrow> stacked_prog_vars \<Rightarrow> stacked_prog_vars" where
 "update_program_in_vars old up = 
@@ -680,17 +666,20 @@ definition update_program_in_vars :: "stacked_prog_vars \<Rightarrow> stacked_pr
     old)"
 declare update_program_in_vars_def [simp]
 
+text "Updates In and InOut vars in programs vars: old vars => vars to update => updated vars"
+definition update_programs_in_vars :: "((program_name,program_state) fmap) \<Rightarrow> stacked_prog_vars \<Rightarrow>((program_name,program_state) fmap)" where
+"update_programs_in_vars prog_map new_vars= 
+  (fmmap
+    (\<lambda>(proc_vars,v1,v2). (update_program_in_vars proc_vars new_vars,v1,v2))
+    prog_map)"
+declare update_programs_in_vars_def [simp]
+
 definition program_vars_distribution :: "model_state \<Rightarrow> model_state" where
 "program_vars_distribution st = 
   (case st of (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-    (let (prog_var_map,proc_map, proc_name) = (case (fmlookup ps_map p_name) of Some(p_state) \<Rightarrow> p_state);
-        put_vars = gather_program_out_vars prog_var_map 
+    (let put_vars = gather_programs_out_vars ps_map 
   in (ST global_var_decl_list
-      (fmmap_keys
-        (\<lambda>name (v1,v2,v3). 
-          ((if name = p_name then v1 else (update_program_in_vars v1 put_vars)),
-          v2,v3))
-        ps_map,
+      (update_programs_in_vars ps_map put_vars,
       p_name)
       function_block_decl_list function_decl_list)))"
 declare program_vars_distribution_def [simp]
@@ -713,6 +702,25 @@ definition add_time_to_processes :: "model_state \<Rightarrow> time \<Rightarrow
         function_block_decl_list 
         function_decl_list)))"
 
+definition add_time_to_active_processes :: "model_state \<Rightarrow> time \<Rightarrow> model_state" where
+"add_time_to_active_processes st t = 
+  (case st of (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
+    (let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of Some(p_state) \<Rightarrow> p_state)
+  in (ST 
+        global_var_decl_list 
+        ((fmmap
+            (\<lambda>(vars,pc_map,pc_name). 
+              (vars,
+              fmmap
+              (\<lambda>(v1,v2,v3,v4,stat,t1).
+                (v1,v2,v3,v4,stat, (if (proc_status_is stat proc_status.Active) then (time_sum t1 t) else t1)))
+              pc_map,
+              pc_name))
+            ps_map),
+          p_name) 
+        function_block_decl_list 
+        function_decl_list)))"
+
 definition is_process_active :: "model_state \<Rightarrow> process_name \<Rightarrow> bool" where
 "is_process_active st name = 
   (case st of (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
@@ -724,4 +732,5 @@ declare is_process_active_def [simp]
 definition filter_active_processes :: "model_state \<Rightarrow> stacked_process list \<Rightarrow> stacked_process list" where
 "filter_active_processes st p_list = (filter (\<lambda>(name,_,_). is_process_active st name) p_list)"
 declare filter_active_processes_def [simp]
+
 end

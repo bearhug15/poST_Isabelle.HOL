@@ -1,6 +1,9 @@
 theory poST_test
-  imports "~~/poST/poSTVM/poSTVM_alt_inductive"
+  imports "~~/poST/poSTVM/poSTVM_initializer"
+          "~~/poST/poSTVM/poSTVM_alt_inductive"
 begin
+
+declare fmupd_reorder_neq [simp]
 
 value "fmempty :: (nat,nat) fmap"
 definition test_process_state1 :: "process_state" where
@@ -13,7 +16,7 @@ definition test_process_state1 :: "process_state" where
   time.Time 0 0 0 0 0)"
 definition test_program_state1 :: "program_state" where
 "test_program_state1 = 
-  (fmap_of_list [],
+  (fmempty,
   (fmupd
     ''process1''
     test_process_state1
@@ -21,7 +24,7 @@ definition test_program_state1 :: "program_state" where
   ''process1'')"
 definition test_ms1 :: "model_state" where
 "test_ms1 = model_state.ST
-  []
+  fmempty
   ((fmupd
     ''program1''
     test_program_state1
@@ -39,7 +42,7 @@ definition test_process_state2 :: "process_state" where
   time.Time 0 0 0 0 0)"
 definition test_program_state2 :: "program_state" where
 "test_program_state2 = 
-  (fmap_of_list [],
+  (fmempty,
   (fmupd
     ''process1''
     test_process_state2
@@ -47,13 +50,15 @@ definition test_program_state2 :: "program_state" where
   ''process1'')"
 definition test_ms2 :: "model_state" where
 "test_ms2 = model_state.ST
-  []
+  fmempty
   ((fmupd
     ''program1''
     test_program_state2
     fmempty),''program1'')
   []
   []"
+
+
 
 definition test_statement1 :: "stmt" where
 "test_statement1 = stmt.AssignSt (common_var.Symbolic ''var1'',expr.Const (const.Nat 1))"
@@ -68,7 +73,7 @@ lemma "(statement_result.Continue,test_ms1)\<turnstile>test_statement1\<longrigh
                 test_program_state2_def)
   apply (rule AssignS)
    apply (rule Const)
-   apply (auto)
+  apply auto
   done
 
 definition test_process_state3 :: "process_state" where
@@ -89,7 +94,7 @@ definition test_program_state3 :: "program_state" where
   ''process1'')"
 definition test_ms3 :: "model_state" where
 "test_ms3 = model_state.ST
-  []
+  fmempty
   ((fmupd
     ''program1''
     test_program_state3
@@ -136,7 +141,7 @@ definition test_program_state4 :: "program_state" where
   ''process1'')"
 definition test_ms4 :: "model_state" where
 "test_ms4 = model_state.ST
-  []
+  fmempty
   ((fmupd
     ''program1''
     test_program_state4
@@ -163,7 +168,7 @@ definition test_program_state5 :: "program_state" where
   ''process1'')"
 definition test_ms5 :: "model_state" where
 "test_ms5 = model_state.ST
-  []
+  fmempty
   ((fmupd
     ''program1''
     test_program_state5
@@ -183,8 +188,6 @@ find_theorems "Suc (Suc 0)"
 lemma "(fmupd 2 3 (fmupd 1 2 fmempty)) = (fmupd 2 3 (fmupd 1 2 (fmupd 2 1 (fmupd 1 1 fmempty))))"
   apply (metis fmupd_idem fmupd_reorder_neq)
   done
-
-declare fmupd_reorder_neq [simp]
 
 lemma "(statement_result.Continue,test_ms4)\<turnstile>test_statement3\<longrightarrow>(statement_result.Continue,test_ms5)"
   apply (simp add: test_statement3_def 
@@ -231,7 +234,7 @@ definition test_program_state6 :: "program_state" where
   ''process1'')"
 definition test_ms6 :: "model_state" where
 "test_ms6 = model_state.ST
-  []
+  fmempty
   ((fmupd
     ''program1''
     test_program_state6
@@ -302,7 +305,7 @@ definition test_program_state7 :: "program_state" where
   ''process1'')"
 definition test_ms7 :: "model_state" where
 "test_ms7 = model_state.ST
-  []
+  fmempty
   ((fmupd
     ''program1''
     test_program_state7
@@ -430,108 +433,62 @@ lemma "(statement_result.Continue,test_ms4)\<turnstile> test_statement6 \<longri
   done
 
 (*
-fmupd ''program1''
-     ([],
-      fmupd ''process1''
-       ([stacked_proc_var.Var
-          (fmupd ''var1'' (stacked_var_init.Symbolic (basic_post_type.Nat 2) None) fmempty)],
-        ''state1'', ''state1'', Active, time.Time 0 0 0 0 0)
-       fmempty,
-      ''process1'')
-     fmempty =
-    fmupd ''program1''
-     ([],
-      fmupd ''process1''
-       ([stacked_proc_var.Var
-          (fmupd ''var1'' (stacked_var_init.Symbolic (basic_post_type.Nat (Suc (Suc 0))) None) fmempty)],
-        ''state1'', ''state1'', Active, time.Time 0 0 0 0 0)
-       fmempty,
-      ''process1'')
-     fmempty
-*)
-(*
-datatype prog_name' = HandDryer'
-datatype symbolic_var' = hands' | control' 
-datatype process_name' = HandDryer''
-datatype state_name' = Wait' | Work'
-
-axiomatization prog_name' :: "prog_name' \<Rightarrow> program_name"
-  where
-    inj_prog_name': "(prog_name' x = prog_name' y) = (x = y)" and
-    surj_prog_name': "\<exists> m. n = prog_name' m"
-axiomatization symbolic_var' :: "symbolic_var' \<Rightarrow> symbolic_var"
-  where
-    inj_symbolic_var': "(symbolic_var' x = symbolic_var' y) = (x = y)" and
-    surj_symbolic_var': "\<exists> m. n = symbolic_var' m"
-axiomatization process_name' :: "process_name' \<Rightarrow> process_name"
-  where
-    inj_process_name': "(process_name' x = process_name' y) = (x = y)" and
-    surj_process_name': "\<exists> m. n = process_name' m"
-axiomatization state_name' :: "state_name' \<Rightarrow> state_name"
-  where
-    inj_state_name': "(state_name' x = state_name' y) = (x = y)" and
-    surj_state_name': "\<exists> m. n = state_name' m"
-declare inj_prog_name' [simp] inj_symbolic_var' [simp] inj_process_name' [simp] inj_state_name' [simp]
-
-abbreviation HandDryerProgram :: program_name
-  where "HandDryerProgram == prog_name' HandDryer'"
-abbreviation hands :: symbolic_var
-  where "hands == symbolic_var' hands'"
-abbreviation control :: symbolic_var
-  where "control == symbolic_var' control'"
-abbreviation HandDryerProcess :: process_name
-  where "HandDryerProcess == process_name' HandDryer''"
-abbreviation Wait :: state_name
-  where "Wait == state_name' Wait'"
-abbreviation Work :: state_name
-  where "Work == state_name' Work'"
-
-
-(*state_decl = "state_name * is_looped * statement_list * (timeout_statement option)"*)
-
-
-definition Wait_HandDryer :: state_decl
-  where "Wait_HandDryer == (Wait,False,StList 
-[(statement.SelectSt 
-  (select_statement.IfSt
-      [(expr.Unary 
-        (unary_expr.UnaryExpr 
-          None 
-          (prim_expr.SymbolicVar hands)), 
-        StList 
-          [statement.AssignSt 
-            ((common_var.SymbolicVar control), 
-             (expr.Unary 
-               (unary_expr.UnaryExpr 
-                 None 
-                (prim_expr.Const (const.Bool True)))))])] 
-      None)),
-  (statement.SetStateSt None)
-],
-None)"
-
-definition Work_HandDryer :: state_decl
-  where "Work_HandDryer == (Work,False,StList
-[(statement.SelectSt 
-  (select_statement.IfSt
-      [(expr.Unary 
-        (unary_expr.UnaryExpr 
-          None 
-          (prim_expr.SymbolicVar hands)), 
-        StList 
-          [statement.ResetSt])]
-      None))],
-Some (timeout_statement.Const 
-  (const.Time (time.Time 0 0 0 2 0)) 
-  (StList [
-    statement.AssignSt 
-      ((common_var.SymbolicVar control), 
-       (expr.Unary 
-         (unary_expr.UnaryExpr 
-           None 
-          (prim_expr.Const (const.Bool False)))))])))"
+definition Turnstile :: "model" where
+"Turnstile = 
+  (None,[],
+  [(''Turnstile'',
+    [(program_var.InVar (fmap_of_list [(''token'',var_init_decl.Simple (basic_post_type.Bool False,None)),
+                                       (''card'',var_init_decl.Simple (basic_post_type.Bool False,None)),
+                                       (''passing'',var_init_decl.Simple (basic_post_type.Bool False,None))])),
+     (program_var.OutVar (fmap_of_list [(''turnstile'',var_init_decl.Simple (basic_post_type.Bool False,None)),
+                                        (''LED'',var_init_decl.Simple (basic_post_type.Bool False,None)),
+                                        (''cardReader'',var_init_decl.Simple (basic_post_type.Bool False,None)),
+                                        (''coinReceiver'',var_init_decl.Simple (basic_post_type.Bool False,None))])),
+     (program_var.Var (True,fmap_of_list [(''PRESENT'',var_init_decl.Simple (basic_post_type.Bool False,Some (expr.Const (const.Bool True)))),
+                                          (''NOT_PRESENT'',var_init_decl.Simple (basic_post_type.Bool False,Some (expr.Const (const.Bool False)))),
+                                          (''OPEN'',var_init_decl.Simple (basic_post_type.Bool False,Some (expr.Const (const.Bool True)))),
+                                          (''CLOSED'',var_init_decl.Simple (basic_post_type.Bool False,Some (expr.Const (const.Bool False)))),
+                                          (''BLOCKED'',var_init_decl.Simple (basic_post_type.Bool False,Some (expr.Const (const.Bool True)))),
+                                          (''UNBLOCKED'',var_init_decl.Simple (basic_post_type.Bool False,Some (expr.Const (const.Bool False)))),
+                                          (''ACK_DURATION'',var_init_decl.Simple (basic_post_type.Time (time.Time 0 0 0 0 0),Some (expr.Const (const.Time (time.Time 0 0 0 0 100)))))]))],
+    [(''controller'',
+      [],
+      [(),() ::state_decl]) :: process_decl]) :: program_decl],
+  [],[])"
 *)
 
+definition HandDryer :: "model" where
+"HandDryer = 
+  (None,[],
+  [(''HandDryer'',
+    [(program_var.InVar (fmap_of_list [(''hands'',var_init_decl.Simple (basic_post_type.Bool False,None))])),
+     (program_var.OutVar (fmap_of_list [(''control'',var_init_decl.Simple (basic_post_type.Bool False,None))]))],
+    [(''HandDryer'',
+     [],
+     [(''Wait'',
+       False,
+       [(statement.SelectSt 
+          (select_statement.IfSt [(expr.SymbolicVar ''hands'',
+                                  [statement.AssignSt (common_var.Symbolic ''control'',expr.Const (const.Bool True)),
+                                   statement.SetStateSt None])] None))],
+       None),
+       (''Work'',
+        False,
+        [(statement.SelectSt 
+          (select_statement.IfSt [(expr.SymbolicVar ''hands'',
+                                  [statement.ResetSt])] None))],
+        Some (timeout_statement.Const 
+              (const.Time (time.Time 0 0 0 2 0))
+              [statement.AssignSt (common_var.Symbolic ''control'',expr.Const (const.Bool False)),
+               statement.SetStateSt None]))
+    :: state_decl]) 
+  :: process_decl]):: program_decl],
+  [],[]) "
 
+definition stacked_HandDryer :: "stacked_model" where
+"stacked_HandDryer = stack_model HandDryer"
+
+value "stacked_HandDryer"
+value "initialize_model_state stacked_HandDryer"
 
 end

@@ -15,20 +15,24 @@ type_synonym set_state_statement = "state_name option"
 
 type_synonym for_list = "expr * expr * (expr option)"
 type_synonym case_list = "nat list"
-datatype statement = AssignSt assign_statement |
-                     FBInvocation fb_invocation |
-                     Return |
-                     Exit |
-                     ProcessSt process_statement |
-                     SetStateSt set_state_statement |
-                     ResetSt |
-                     SelectSt select_statement |
-                     IterSt iter_statement
-  and select_statement = IfSt "(expr * (statement list)) list" "(statement list) option" | 
-                         CaseSt expr "(case_list * (statement list)) list" "(statement list) option"
-  and iter_statement = ForSt symbolic_var for_list "statement list" | 
-                       WhileSt expr "statement list" | 
-                       RepeatSt "statement list" expr
+    datatype statement = AssignSt assign_statement |
+                         FBInvocation fb_invocation |
+                         Return |
+                         Exit |
+                         ProcessSt process_statement |
+                         SetStateSt set_state_statement |
+                         ResetSt |
+                         SelectSt select_statement |
+                         IterSt iter_statement
+        and  select_statement = 
+                IfSt "(expr * (statement list)) list" 
+                     "(statement list) option" | 
+                CaseSt expr "(case_list * (statement list)) list" 
+                            "(statement list) option"
+        and  iter_statement = 
+                ForSt symbolic_var for_list "statement list" | 
+                WhileSt expr "statement list" | 
+                RepeatSt "statement list" expr
 
 type_synonym statement_list = "statement list"
 (*

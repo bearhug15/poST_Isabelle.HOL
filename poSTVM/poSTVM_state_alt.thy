@@ -9,13 +9,25 @@ type_synonym current_time = "time"
 
 text "Process state in form of process vars list, current state, next_state, list of states, process status, process time"
 (*maybe delete starting state?*)
-type_synonym process_state = "stacked_proc_vars * state_name * state_name * (state_name list)* proc_status * current_time"
+type_synonym process_state = "stacked_proc_vars * 
+                              state_name * 
+                              state_name * 
+                              (state_name list) * 
+                              proc_status * 
+                              current_time"
 
 text "Program state in form of program vars list, processes map, current process"
-type_synonym program_state ="stacked_prog_vars * ((process_name,process_state) fmap) * process_name"
+type_synonym program_state ="stacked_prog_vars * 
+                             ((process_name,process_state) fmap) * 
+                             process_name"
 
 text "Model state in form of global vars, programs map, current program, function blocks list, functions list"
-datatype model_state = ST stacked_global_vars  "((program_name,program_state) fmap * program_name)"  "(function_block_decl list)"  "(function_decl list)"
+datatype model_state = ST 
+                       stacked_global_vars  
+                       "((program_name,program_state) fmap * 
+                       program_name)"  
+                       "(function_block_decl list)"  
+                       "(function_decl list)"
 
 datatype var_level = Global | Program | Process
 

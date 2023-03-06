@@ -3,16 +3,17 @@ theory poST_vars
     poST_expr "HOL-Library.Finite_Map"
 begin
 
-type_synonym simple_spec_init = "basic_post_type * (expr option)"
+
 
 datatype array_interval = Expr expr expr | Int int int
 type_synonym array_spec = "array_interval * (basic_post_type list)"
 type_synonym array_init = "expr list"
 type_synonym array_spec_init = "array_spec * (array_init option)"
 
-datatype var_init_decl = Simple simple_spec_init |
-                         Array array_spec_init |
-                         FunctionBlock func_block_name
+type_synonym simple_spec_init = "basic_post_type * (expr option)"
+datatype     var_init_decl = Simple simple_spec_init |
+                             Array array_spec_init |
+                             FunctionBlock func_block_name
 
 type_synonym in_var_decl = "((symbolic_var, var_init_decl) fmap)"
 type_synonym out_var_decl = "((symbolic_var, var_init_decl) fmap)"

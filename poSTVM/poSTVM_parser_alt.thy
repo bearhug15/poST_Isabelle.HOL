@@ -43,11 +43,11 @@ datatype stmt =
   Comb stmt stmt |
   Blank 
 
-value "butlast [1::nat,2,3,4]" 
 
 fun case_list_to_if :: "expr \<Rightarrow> case_list \<Rightarrow> expr" where
   "case_list_to_if _ [] = expr.Const (const.Bool False)"
-| "case_list_to_if exp [val] = expr.Binary binary_op.Eq exp (expr.Const (const.Nat val))"
+| "case_list_to_if exp [val] = 
+    expr.Binary binary_op.Eq exp (expr.Const (const.Nat val))"
 | "case_list_to_if exp (val#other) = 
     expr.Binary binary_op.Or
       (expr.Binary binary_op.Eq exp (expr.Const (const.Nat val)))
@@ -69,7 +69,8 @@ function (sequential) statement_to_stmt :: "statement \<Rightarrow> stmt" and
 | "statement_to_stmt (statement.SelectSt (select_statement.IfSt branches else_option)) =(if_to_stmt branches else_option)"
 | "statement_to_stmt (statement.SelectSt (select_statement.CaseSt exp cases_list else_option)) =(case_to_stmt exp cases_list else_option)"
 | "st_list_to_stmt [] = stmt.Blank"
-| "st_list_to_stmt (st#other) = stmt.Comb (statement_to_stmt st) (st_list_to_stmt other)"
+| "st_list_to_stmt (st#other) = 
+    stmt.Comb (statement_to_stmt st) (st_list_to_stmt other)"
 | "if_to_stmt [] else_option= 
     (case else_option of
       None \<Rightarrow> stmt.Blank
@@ -91,13 +92,20 @@ function (sequential) statement_to_stmt :: "statement \<Rightarrow> stmt" and
         (case_to_stmt exp other else_option))"
 | "statement_to_stmt (statement.IterSt (iter_statement.WhileSt exp st_list)) =
     stmt.WhileSt exp (st_list_to_stmt st_list)"
-| "statement_to_stmt (statement.IterSt (iter_statement.RepeatSt st_list exp)) =
+| "statement_to_stmt (statement.IterSt 
+                        (iter_statement.RepeatSt st_list exp)) =
     (let body = (st_list_to_stmt st_list) 
       in stmt.Comb body (stmt.WhileSt exp body))"
-| "statement_to_stmt (statement.IterSt (iter_statement.ForSt var_name (start,end,step_option) st_list)) =
+| "statement_to_stmt (statement.IterSt 
+                        (iter_statement.ForSt 
+                            var_name 
+                            (start,end,step_option) 
+                            st_list)) =
     stmt.Comb 
       (stmt.AssignSt (common_var.Symbolic var_name,start))
-      (let cond = expr.Binary binary_op.Less (expr.SymbolicVar var_name) end;
+      (let cond = expr.Binary 
+                    binary_op.Less 
+                    (expr.SymbolicVar var_name) end;
            body = (st_list_to_stmt st_list);
            step_st = stmt.AssignSt 
                       (common_var.Symbolic var_name, 
@@ -372,7 +380,7 @@ type_synonym stacked_model = "(configuration_decl option) * stacked_global_vars 
 text "Converting model declaration to stacked version"
 definition stack_model :: "model \<Rightarrow> stacked_model" where
 "stack_model m = 
-  (case m of (conf, glob, prog_list, fb_list, f_list) \<Rightarrow>
+  (case m of (conf, glob, prog_list, f_list, fb_list) \<Rightarrow>
   (conf,
   stack_global_vars glob, 
   (map 

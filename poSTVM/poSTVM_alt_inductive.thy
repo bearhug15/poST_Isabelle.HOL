@@ -153,7 +153,7 @@ inductive eval_process :: "[model_state,stacked_process,model_state] \<Rightarro
 
 
 inductive eval_program :: "[model_state,stacked_program,model_state] \<Rightarrow> bool" ("_\<turnstile>_\<Longrightarrow>_") and
-          eval_programs :: "[model_state,stacked_program list,model_state] \<Rightarrow> bool" ("_\<turnstile>_[\<Longrightarrow>]_") where
+          evals_program :: "[model_state,stacked_program list,model_state] \<Rightarrow> bool" ("_\<turnstile>_[\<Longrightarrow>]_") where
     ProgStep : "\<lbrakk>new_st = (set_cur_prog_name st name);
                  new_st\<turnstile>process_list[\<Rightarrow>]st1;
                  st2 = process_vars_distribution st1\<rbrakk>\<Longrightarrow> 

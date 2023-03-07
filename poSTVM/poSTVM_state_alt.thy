@@ -8,7 +8,6 @@ begin
 type_synonym current_time = "time"
 
 text "Process state in form of process vars list, current state, next_state, list of states, process status, process time"
-(*maybe delete starting state?*)
 type_synonym process_state = "stacked_proc_vars * 
                               state_name * 
                               state_name * 
@@ -24,8 +23,8 @@ type_synonym program_state ="stacked_prog_vars *
 text "Model state in form of global vars, programs map, current program, function blocks list, functions list"
 datatype model_state = ST 
                        stacked_global_vars  
-                       "((program_name,program_state) fmap * 
-                       program_name)"  
+                       "(program_name,program_state) fmap" 
+                       program_name 
                        "(function_block_decl list)"  
                        "(function_decl list)"
 
@@ -66,6 +65,10 @@ definition get_cur_proc_state_by_prog :: "program_state \<Rightarrow> process_st
 "get_cur_proc_state_by_prog ps = (case (fmlookup (fst (snd ps)) (snd (snd ps))) of Some (st) \<Rightarrow> st)"
 declare get_cur_proc_state_by_prog_def [simp]
 
+definition get_proc_state_by_prog_by_name :: "program_state \<Rightarrow> process_name \<Rightarrow> process_state" where
+"get_proc_state_by_prog_by_name pg pc_name = 
+  (let (_,pc_map,_) = pg in (case (fmlookup pc_map pc_name) of Some st \<Rightarrow> st))"
+
 text "Getting process vars list in current process from program state"
 definition get_cur_proc_vars_from_prog :: "program_state \<Rightarrow>stacked_proc_vars" where 
   "get_cur_proc_vars_from_prog ps_state = 
@@ -77,7 +80,7 @@ text "Getting current program state from model state"
 definition get_cur_prog_state :: "model_state \<Rightarrow> program_state" where
 "get_cur_prog_state st = 
   (case st of 
-    (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
+    (ST global_var_decl_list ps_map p_name function_block_decl_list function_decl_list) \<Rightarrow>
       (case (fmlookup ps_map p_name) of 
         Some(p_state) \<Rightarrow> p_state))"
 declare get_cur_prog_state_def [simp]
@@ -103,28 +106,42 @@ definition get_cur_proc_vars :: "model_state \<Rightarrow> stacked_proc_vars" wh
 "get_cur_proc_vars st = get_cur_proc_vars_from_prog (get_cur_prog_state st)"
 declare get_cur_proc_vars_def [simp]
 
-definition get_global_vars :: "model_state \<Rightarrow> stacked_global_vars" where
-"get_global_vars st = (case st of (ST vars _ _ _) \<Rightarrow> vars)"
-declare get_global_vars_def [simp]
-
 definition get_cur_prog_vars :: "model_state \<Rightarrow> stacked_prog_vars" where
 "get_cur_prog_vars st = (let (vars,_,_) = (get_cur_prog_state st) in vars)"
 declare get_cur_prog_vars_def [simp]
 
-definition get_var_level :: "model_state \<Rightarrow> symbolic_var \<Rightarrow> var_level" where
-"get_var_level st var_name =
+definition get_global_vars :: "model_state \<Rightarrow> stacked_global_vars" where
+"get_global_vars st = (case st of (ST vars _ _ _ _) \<Rightarrow> vars)"
+declare get_global_vars_def [simp]
+
+definition get_cur_prog_vars_get :: "model_state \<Rightarrow> stacked_prog_vars" where
+"get_cur_prog_vars_get st = (let (vars,_,_) = (get_cur_prog_state st) in vars)"
+declare get_cur_prog_vars_def [simp]
+
+definition get_var_level_set :: "model_state \<Rightarrow> symbolic_var \<Rightarrow> var_level" where
+"get_var_level_set st var_name =
   (case (fmlookup (get_global_vars st) var_name) of
     Some _ \<Rightarrow> var_level.Global
   | None \<Rightarrow> (case (fmlookup (get_cur_prog_vars st) var_name) of
               Some _ \<Rightarrow> var_level.Program
             | None \<Rightarrow> (case (fmlookup (get_cur_proc_vars st) var_name) of
                         Some _ \<Rightarrow> var_level.Process)))"
-declare get_var_level_def [simp]
+declare get_var_level_set_def [simp]
+
+definition get_var_level_get :: "model_state \<Rightarrow> symbolic_var \<Rightarrow> var_level" where
+"get_var_level_get st var_name =
+  (case (fmlookup (get_global_vars st) var_name) of
+    Some _ \<Rightarrow> var_level.Global
+  | None \<Rightarrow> (case (fmlookup (get_cur_prog_vars st) var_name) of
+              Some _ \<Rightarrow> var_level.Program
+            | None \<Rightarrow> (case (fmlookup (get_cur_proc_vars st) var_name) of
+                        Some _ \<Rightarrow> var_level.Process)))"
+declare get_var_level_get_def [simp]
 
 text "Getting variable init by name from model state"
 definition get_cur_var_by_name :: "model_state \<Rightarrow> symbolic_var \<Rightarrow> stacked_var_init" where
 "get_cur_var_by_name st var_name = 
-  (case (get_var_level st var_name) of
+  (case (get_var_level_get st var_name) of
     var_level.Global \<Rightarrow> the (get_global_var_by_name (get_global_vars st) var_name)
   | var_level.Program \<Rightarrow> the (get_prog_var_by_name (get_cur_prog_vars st) var_name)
   | var_level.Process \<Rightarrow> the (get_proc_var_by_name (get_cur_proc_vars st) var_name))"
@@ -166,7 +183,7 @@ declare set_symbvar_in_proc_vars_def [simp]
 
 definition set_symbvar_in_cur_proc_vars :: "model_state \<Rightarrow> symbolic_var \<Rightarrow> stacked_var_init \<Rightarrow> model_state" where
 "set_symbvar_in_cur_proc_vars st var_name val = 
-  (case st of (ST global_vars (pg_map,pg_name) funcs funblocks) \<Rightarrow>
+  (case st of (ST global_vars pg_map pg_name  f1 f2) \<Rightarrow>
     (let (prog_vars,pc_map,pc_name) = the (fmlookup pg_map pg_name);
          (proc_vars,v1,v2,v3,v4,v5) = the (fmlookup pc_map pc_name)
      in (ST
@@ -179,9 +196,10 @@ definition set_symbvar_in_cur_proc_vars :: "model_state \<Rightarrow> symbolic_v
             (set_symbvar_in_proc_vars proc_vars var_name val,v1,v2,v3,v4,v5)
             pc_map),
            pc_name)
-          pg_map,pg_name)
-         funcs
-         funblocks)))"
+          pg_map)
+          pg_name
+         f1
+         f2)))"
 declare set_symbvar_in_cur_proc_vars_def [simp]
 
 definition set_symbvar_in_prog_vars :: "stacked_prog_vars \<Rightarrow> symbolic_var \<Rightarrow> stacked_var_init \<Rightarrow> stacked_prog_vars" where
@@ -196,7 +214,7 @@ declare set_symbvar_in_prog_vars_def [simp]
 
 definition set_symbvar_in_cur_prog_vars :: "model_state \<Rightarrow> symbolic_var \<Rightarrow> stacked_var_init \<Rightarrow> model_state" where
 "set_symbvar_in_cur_prog_vars st var_name val = 
-  (case st of (ST global_vars (pg_map,pg_name) funcs funblocks) \<Rightarrow>
+  (case st of (ST global_vars pg_map pg_name  f1 f2) \<Rightarrow>
     (let (prog_vars,pc_map,pc_name) = the (fmlookup pg_map pg_name)
      in (ST
          global_vars 
@@ -205,9 +223,10 @@ definition set_symbvar_in_cur_prog_vars :: "model_state \<Rightarrow> symbolic_v
           (set_symbvar_in_prog_vars prog_vars var_name val,
            pc_map,
            pc_name)
-          pg_map,pg_name)
-         funcs
-         funblocks)))"
+          pg_map)
+         pg_name
+         f1
+         f2)))"
 declare set_symbvar_in_cur_prog_vars_def [simp]
 
 definition set_symbvar_in_global_vars :: "stacked_global_vars \<Rightarrow> symbolic_var \<Rightarrow> stacked_var_init \<Rightarrow> stacked_global_vars" where
@@ -218,10 +237,10 @@ declare set_symbvar_in_global_vars_def [simp]
 
 definition set_symbvar_in_cur_global_vars :: "model_state \<Rightarrow> symbolic_var \<Rightarrow> stacked_var_init \<Rightarrow> model_state" where
 "set_symbvar_in_cur_global_vars st var_name val = 
-  (case st of (ST global_vars (pg_map,pg_name) funcs funblocks) \<Rightarrow>
+  (case st of (ST global_vars pg_map pg_name  funcs funblocks) \<Rightarrow>
     (ST
      (set_symbvar_in_global_vars global_vars var_name val) 
-     (pg_map,pg_name)
+     pg_map pg_name 
      funcs
      funblocks))"
 declare set_symbvar_in_cur_global_vars_def [simp]
@@ -230,7 +249,7 @@ text "Setting in model state new symbolic var value by name"
 definition set_symbvar :: "model_state \<Rightarrow> symbolic_var \<Rightarrow> basic_post_type => model_state" where
 "set_symbvar st var_name value =
   (let val = (stacked_var_init.Symbolic value None) in
-  (case (get_var_level st var_name) of
+  (case (get_var_level_set st var_name) of
     var_level.Global \<Rightarrow> (set_symbvar_in_cur_global_vars st var_name val)
   | var_level.Program \<Rightarrow> (set_symbvar_in_cur_prog_vars st var_name val)
   | var_level.Process \<Rightarrow> (set_symbvar_in_cur_proc_vars st var_name val)))"
@@ -253,7 +272,7 @@ definition set_arvar :: "model_state \<Rightarrow> symbolic_var \<Rightarrow> ba
                   (stacked_array_interval.Int val1 val2)
                   (set_bval_to_list values (basic_post_type_sum (basic_post_type.Int val1) pos) value)
                   opt) in 
-  (case (get_var_level st var_name) of
+  (case (get_var_level_set st var_name) of
     var_level.Global \<Rightarrow> (set_symbvar_in_cur_global_vars st var_name val)
   | var_level.Program \<Rightarrow> (set_symbvar_in_cur_prog_vars st var_name val)
   | var_level.Process \<Rightarrow> (set_symbvar_in_cur_proc_vars st var_name val)))) "
@@ -269,66 +288,59 @@ declare check_proc_status_def [simp]
 text "Setting current process name in current program"
 definition set_cur_proc_name :: "model_state \<Rightarrow> process_name \<Rightarrow> model_state" where
 "set_cur_proc_name st name = 
-  (case st of
-    (ST g_list (pr_map,pr_name) fb_list f_list) \<Rightarrow>
-      (let (var_list, p_map,p_name) = (get_cur_prog_state (ST g_list (pr_map,pr_name) fb_list f_list))
+  (case st of (ST g_list pg_map pg_name f1 f2) \<Rightarrow>
+      (let (var_list, p_map,p_name) = (get_cur_prog_state st)
            
         in (ST g_list 
-          ((fmupd 
-              pr_name 
+          (fmupd 
+              pg_name 
               (var_list,p_map,name)
-              pr_map),
-            pr_name) fb_list f_list)))"
+              pg_map)
+            pg_name f1 f2)))"
 declare set_cur_proc_name_def [simp]
 
 text "Setting current program name"
 definition set_cur_prog_name :: "model_state \<Rightarrow> program_name \<Rightarrow> model_state" where
 "set_cur_prog_name st name =
   (case st of
-    (ST g_list (pr_map,pr_name) fb_list f_list) \<Rightarrow>
-      (ST g_list (pr_map,name) fb_list f_list))"
+    (ST g_list pg_map pg_name f1 f2) \<Rightarrow>
+      (ST g_list pg_map name f1 f2))"
 declare set_cur_prog_name_def [simp]
 
 text "Resetting timer in current process in model state"
 definition reset_timer :: "model_state \<Rightarrow> model_state" where
 "reset_timer st = 
   (case st of
-    (ST g_list (pr_map,pr_name) fb_list f_list) \<Rightarrow>
-      (let (var_list, p_map,p_name) = (get_cur_prog_state (ST g_list (pr_map,pr_name) fb_list f_list));
+    (ST g_list pg_map pg_name fb_list f_list) \<Rightarrow>
+      (let (var_list, p_map,p_name) = (get_cur_prog_state st);
            (process_vars, current_state, next_state, state_names, process_status, t) = (get_cur_proc_state_by_prog (var_list,p_map,p_name))
         in (ST g_list 
-          ((fmupd 
-              pr_name 
+          (fmupd 
+              pg_name 
               (var_list,(fmupd 
                  p_name 
                  (process_vars, current_state, next_state, state_names, process_status, time.Time 0 0 0 0 0)
                  p_map),p_name)
-              pr_map),
-            pr_name) fb_list f_list)))"
+              pg_map) 
+            pg_name fb_list f_list)))"
 declare reset_timer_def [simp]
 
 text "Stopping process by name in model state"
 definition stop_process :: "model_state \<Rightarrow> process_name \<Rightarrow> model_state" where
 "stop_process st target_proc_name =
-   (case st of 
-    (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-      (let (var_list,proc_map, proc_name) = 
-        (case (fmlookup ps_map p_name) of
-          Some(p_state) \<Rightarrow> p_state);
-        ((proc_var_list), st_name, next_state, state_names, proc_stat, cur_time) = 
-          (case (fmlookup proc_map target_proc_name) of 
-            Some(proc_state) \<Rightarrow> proc_state)
-        in (ST global_var_decl_list 
-        ((fmupd 
-            p_name
-            (var_list,
-              (fmupd 
-                target_proc_name
-                ((proc_var_list), st_name,next_state,state_names, proc_status.Stop, cur_time)
-                proc_map), 
-              proc_name) 
-            ps_map),
-          p_name) function_block_decl_list function_decl_list)))"
+    (case st of
+    (ST g_list pg_map pg_name fb_list f_list) \<Rightarrow>
+      (let (var_list, p_map,p_name) = (get_cur_prog_state st);
+           (process_vars, current_state, next_state, state_names, process_status, t) = (get_proc_state_by_prog_by_name (var_list,p_map,p_name) target_proc_name)
+        in (ST g_list 
+          (fmupd 
+              pg_name 
+              (var_list,(fmupd 
+                 target_proc_name 
+                 (process_vars, current_state, next_state, state_names, proc_status.Stop, t)
+                 p_map),p_name)
+              pg_map) 
+            pg_name fb_list f_list)))"
 declare stop_process_def [simp]
 
 text "Stopping current process in model state"
@@ -778,5 +790,37 @@ declare is_process_active_def [simp]
 definition filter_active_processes :: "model_state \<Rightarrow> stacked_process list \<Rightarrow> stacked_process list" where
 "filter_active_processes st p_list = (filter (\<lambda>(name,_,_). is_process_active st name) p_list)"
 declare filter_active_processes_def [simp]
+
+(*
+text "Process state in form of process vars list, current state, next_state, list of states, process status, process time"
+type_synonym process_state = "stacked_proc_vars * 
+                              state_name * 
+                              state_name * 
+                              (state_name list) * 
+                              proc_status * 
+                              current_time"
+
+text "Program state in form of program vars list, processes map, current process"
+type_synonym program_state ="stacked_prog_vars * 
+                             ((process_name,process_state) fmap) * 
+                             process_name"
+
+text "Model state in form of global vars, programs map, current program, function blocks list, functions list"
+datatype model_state = ST 
+                       stacked_global_vars  
+                       "((program_name,program_state) fmap * 
+                       program_name)"  
+                       "(function_block_decl list)"  
+                       "(function_decl list)"
+*)
+
+definition gen_proxy_for_func :: "model_state \<Rightarrow> stacked_func \<Rightarrow> model_state" where
+"gen_proxy_for_func st func = 
+  (let (name,val,vars,stm) = func
+  in (ST 
+      fmempty
+      (fmap_of_list [])
+      fmempty
+      (snd (snd (snd (snd st))))))"
 
 end

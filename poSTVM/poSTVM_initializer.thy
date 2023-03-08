@@ -95,9 +95,8 @@ declare initialize_stacked_proc_vars_def [simp]
 text "Initialization of process variables"
 definition initialize_process_vars :: "model_state \<Rightarrow> model_state" where
 "initialize_process_vars st =
-  (case st of (model_state.ST global_vars_list (program_map,cur_prog_name) fb_decl_list f_decl_list) \<Rightarrow>
-  (let st = (model_state.ST global_vars_list (program_map,cur_prog_name) fb_decl_list f_decl_list) 
-  in  (model_state.ST 
+  (case st of (model_state.ST global_vars_list program_map cur_prog_name f1 f2) \<Rightarrow>
+   (model_state.ST 
     global_vars_list 
     (fmmap 
        (\<lambda>(var_list,proc_map,proc_name). 
@@ -107,10 +106,10 @@ definition initialize_process_vars :: "model_state \<Rightarrow> model_state" wh
                 (initialize_stacked_proc_vars st var_list,v1,v2,v3,v4))
               proc_map),
           proc_name)) 
-       program_map,
-      cur_prog_name) 
-    fb_decl_list 
-    f_decl_list)))"
+       program_map)
+    cur_prog_name 
+    f1 
+    f2))"
 declare initialize_process_vars_def [simp]
 
 text "Initialization of prog_vars"
@@ -129,17 +128,16 @@ declare initialize_stacked_prog_vars_def [simp]
 text "Initialization of program variables"
 definition initialize_program_vars :: "model_state \<Rightarrow> model_state" where
 "initialize_program_vars st  =
-  (case st of (model_state.ST global_vars_list (program_map,cur_prog_name) fb_decl_list f_decl_list) \<Rightarrow> 
-   (let st = (model_state.ST global_vars_list (program_map,cur_prog_name) fb_decl_list f_decl_list)
-  in (model_state.ST 
+  (case st of (model_state.ST global_vars_list program_map cur_prog_name f1 f2) \<Rightarrow> 
+    (model_state.ST 
     global_vars_list 
     (fmmap 
        (\<lambda>(var_list,proc_map,proc_name). 
           (initialize_stacked_prog_vars st var_list,proc_map,proc_name)) 
-       program_map,
-      cur_prog_name) 
-    fb_decl_list 
-    f_decl_list)))"
+       program_map)
+    cur_prog_name 
+    f1 
+    f2))"
 declare initialize_program_vars_def [simp]
 
 text "Initialization of global_vars"
@@ -153,10 +151,10 @@ declare initialize_stacked_global_vars_def [simp]
 
 definition initialize_global_vars :: "model_state \<Rightarrow> model_state" where
 "initialize_global_vars st =
-  (case st of (model_state.ST global_vars (program_map,cur_prog_name) fb_decl_list f_decl_list) \<Rightarrow> 
+  (case st of (model_state.ST global_vars program_map cur_prog_name f1 f2) \<Rightarrow> 
    (model_state.ST 
     (initialize_stacked_global_vars st global_vars) 
-    (program_map,cur_prog_name) fb_decl_list f_decl_list))"
+     program_map cur_prog_name f1 f2))"
 
 text "Extracting new process state from stacked process"
 definition extract_process_state :: "stacked_process \<Rightarrow> process_state" where
@@ -184,14 +182,13 @@ declare extract_program_state_def [simp]
 text "Extracting new model state from stacked model"
 definition extract_model_state :: "stacked_model \<Rightarrow> model_state" where
 "extract_model_state sm =
-  (case sm of 
-    (conf, global, prog_list, fb_list, f_list) \<Rightarrow>
-(let (name, _, _) = (nth prog_list 0);
+  (case sm of (conf, global, prog_list, f1, f2) \<Rightarrow>
+    (let (name, _, _) = (nth prog_list 0);
         prog_map = (fmap_of_list
-    (map
-      (\<lambda>(name, var_list, proc_list). (name, (extract_program_state (name, var_list, proc_list))))
-      prog_list))
-  in (model_state.ST global (prog_map,name) fb_list f_list)))"
+      (map
+        (\<lambda>(name, var_list, proc_list). (name, (extract_program_state (name, var_list, proc_list))))
+        prog_list))
+    in (model_state.ST global prog_map name f1 f2)))"
 declare extract_model_state_def [simp]
 
 definition initialize_model_state :: "stacked_model \<Rightarrow> model_state" where
@@ -202,6 +199,38 @@ definition initialize_model_state :: "stacked_model \<Rightarrow> model_state" w
       m3 = initialize_process_vars m2
     in new_model)"
 declare initialize_model_state_def [simp]
+
+definition transform_func_to_proc_vars :: "stacked_func_vars \<Rightarrow> func_name \<Rightarrow> basic_post_type \<Rightarrow> stacked_proc_vars" where
+"transform_func_to_proc_vars vars name val = 
+ (fmupd 
+  name
+  (stacked_proc_var.Var (stacked_var_init.Symbolic val None))
+  (fmmap
+    (\<lambda>var. (case var of
+              stacked_func_var.Var val \<Rightarrow> stacked_proc_var.Var val
+            | stacked_func_var.InVar val \<Rightarrow> stacked_proc_var.InVar val
+            | stacked_func_var.OutVar val \<Rightarrow> stacked_proc_var.OutVar val
+            | stacked_func_var.InOutVar val \<Rightarrow> stacked_proc_var.InOutVar val))
+    vars))"
+declare transform_func_to_proc_vars_def [simp]
+
+definition stacked_func_to_stacked_model :: "stacked_func \<Rightarrow> stacked_model" where
+"stacked_func_to_stacked_model sf = 
+  (let (f_name,value,vars,stmts )= sf 
+  in (None,fmempty,
+      [(f_name,fmempty,
+        [(f_name,(transform_func_to_proc_vars vars f_name value),
+          [(f_name,False,stmts,None)])])],
+      [],fmempty))"
+declare stacked_func_to_stacked_model_def [simp]
+
+definition gen_proxy_for_func :: "model_state \<Rightarrow> stacked_func \<Rightarrow> model_state" where
+"gen_proxy_for_func st func = 
+  (case (st,(initialize_model_state (stacked_func_to_stacked_model func))) of 
+    ((ST _ _ _ _ funcs),
+     (ST v1 v2 v3 v4 _)) \<Rightarrow> ((ST v1 v2 v3 v4 funcs)))"
+declare gen_proxy_for_func_def [simp]
+
 
 
 end

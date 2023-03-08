@@ -26,7 +26,7 @@ datatype model_state = ST
                        "(program_name,program_state) fmap" 
                        program_name 
                        "(function_block_decl list)"  
-                       "(function_decl list)"
+                       "stacked_funcs"
 
 datatype var_level = Global | Program | Process
 
@@ -347,190 +347,142 @@ text "Stopping current process in model state"
 definition stop_same_process :: "model_state  \<Rightarrow> model_state" where
 "stop_same_process st =
   (case st of
-    (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-(let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of
-                              Some(p_state) \<Rightarrow> p_state);
-        ((proc_var_list), st_name,next_state,state_names, proc_stat, cur_time) = (case (fmlookup proc_map proc_name) of 
-                                    Some(proc_state) \<Rightarrow> proc_state)
-    in (ST 
-        global_var_decl_list 
-        ((fmupd 
-            p_name
-            (var_list,(fmupd 
-                 proc_name
-                 ((proc_var_list), st_name,next_state,state_names, proc_status.Stop, cur_time)
-                 proc_map), 
-              proc_name) 
-            ps_map),
-          p_name) 
-        function_block_decl_list 
-        function_decl_list)))"
+    (ST g_list pg_map pg_name fb_list f_list) \<Rightarrow>
+      (let (var_list, p_map,p_name) = (get_cur_prog_state st);
+           (process_vars, current_state, next_state, state_names, process_status, t) = (get_proc_state_by_prog_by_name (var_list,p_map,p_name) p_name)
+        in (ST g_list 
+          (fmupd 
+              pg_name 
+              (var_list,(fmupd 
+                 p_name 
+                 (process_vars, current_state, next_state, state_names, proc_status.Stop, t)
+                 p_map),p_name)
+              pg_map) 
+            pg_name fb_list f_list)))"
 declare stop_same_process_def [simp]
 
 text "Erroring process by name in model state"
 definition error_process :: "model_state \<Rightarrow> process_name \<Rightarrow> model_state" where
 "error_process st target_proc_name =
-   (case st of 
-      (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-(let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of
-                              Some(p_state) \<Rightarrow> p_state);
-        ((proc_var_list), st_name,next_state,state_names, proc_stat, cur_time) = (case (fmlookup proc_map target_proc_name) of 
-                                    Some(proc_state) \<Rightarrow> proc_state)
-    in (ST 
-        global_var_decl_list 
-        ((fmupd 
-            p_name
-            (var_list,(fmupd 
-                 target_proc_name
-                 ((proc_var_list), st_name,next_state,state_names, proc_status.Error, cur_time)
-                 proc_map), 
-              proc_name) 
-            ps_map),
-          p_name) 
-        function_block_decl_list 
-        function_decl_list)))"
+   (case st of
+    (ST g_list pg_map pg_name fb_list f_list) \<Rightarrow>
+      (let (var_list, p_map,p_name) = (get_cur_prog_state st);
+           (process_vars, current_state, next_state, state_names, process_status, t) = (get_proc_state_by_prog_by_name (var_list,p_map,p_name) target_proc_name)
+        in (ST g_list 
+          (fmupd 
+              pg_name 
+              (var_list,(fmupd 
+                 target_proc_name 
+                 (process_vars, current_state, next_state, state_names, proc_status.Error, t)
+                 p_map),p_name)
+              pg_map) 
+            pg_name fb_list f_list)))"
 declare error_process_def [simp]
 
 text "Erroring current process in model state"
 definition error_same_process :: "model_state \<Rightarrow> model_state" where
-"error_same_process st =
-   (case st of 
-(ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-(let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of
-                              Some(p_state) \<Rightarrow> p_state);
-        ((proc_var_list), st_name,next_state,state_names, proc_stat, cur_time) = (case (fmlookup proc_map proc_name) of 
-                                    Some(proc_state) \<Rightarrow> proc_state)
-    in (ST 
-        global_var_decl_list 
-        ((fmupd 
-            p_name
-            (var_list,(fmupd 
-                 proc_name
-                 ((proc_var_list), st_name,next_state,state_names, proc_status.Error, cur_time)
-                 proc_map), 
-              proc_name) 
-            ps_map),
-          p_name) 
-        function_block_decl_list 
-        function_decl_list)))"
+"error_same_process st=
+   (case st of
+    (ST g_list pg_map pg_name fb_list f_list) \<Rightarrow>
+      (let (var_list, p_map,p_name) = (get_cur_prog_state st);
+           (process_vars, current_state, next_state, state_names, process_status, t) = (get_proc_state_by_prog_by_name (var_list,p_map,p_name) p_name)
+        in (ST g_list 
+          (fmupd 
+              pg_name 
+              (var_list,(fmupd 
+                 p_name 
+                 (process_vars, current_state, next_state, state_names, proc_status.Error, t)
+                 p_map),p_name)
+              pg_map) 
+            pg_name fb_list f_list)))"
 declare error_same_process_def [simp]
 
 text "Resetting process by name in model state"
 definition reset_process :: "model_state \<Rightarrow> process_name \<Rightarrow> model_state" where
 "reset_process st target_proc_name =
-  (case st of
-(ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-(let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of
-                              Some(p_state) \<Rightarrow> p_state);
-        (proc_var_list,st_name ,_,state_names :: char list list, proc_stat, cur_time) = (case (fmlookup proc_map target_proc_name) of 
-                                    Some(proc_state) \<Rightarrow> proc_state)
-  in (ST 
-        global_var_decl_list 
-        ((fmupd 
-            p_name
-            (var_list,(fmupd 
-                 target_proc_name
-                 (proc_var_list,st_name, hd state_names,state_names :: char list list, proc_status.Active, time.Time 0 0 0 0 0)
-                 proc_map), 
-              proc_name :: process_name) 
-            ps_map),
-          p_name) 
-        function_block_decl_list 
-        function_decl_list)))"
+ (case st of
+    (ST g_list pg_map pg_name fb_list f_list) \<Rightarrow>
+      (let (var_list, p_map,p_name) = (get_cur_prog_state st);
+           (process_vars, current_state, next_state, state_names, process_status, t) = (get_proc_state_by_prog_by_name (var_list,p_map,p_name) target_proc_name)
+        in (ST g_list 
+          (fmupd 
+              pg_name 
+              (var_list,(fmupd 
+                 target_proc_name 
+                 (process_vars, current_state, next_state, state_names, proc_status.Active, time.Time 0 0 0 0 0)
+                 p_map),p_name)
+              pg_map) 
+            pg_name fb_list f_list)))"
 declare reset_process_def [simp]
 
 text "Resetting current process in model state"
 definition reset_same_process :: "model_state \<Rightarrow> model_state" where
 "reset_same_process st  =
-  (case st of 
-(ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-(let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of
-                              Some(p_state) \<Rightarrow> p_state);
-        ((proc_var_list), st_name,_,state_names, proc_stat, cur_time) = (case (fmlookup proc_map proc_name) of 
-                                    Some(proc_state) \<Rightarrow> proc_state)
-  in (ST 
-        global_var_decl_list 
-        ((fmupd 
-            p_name
-            (var_list,(fmupd 
-                 proc_name
-                 ((proc_var_list),st_name, hd state_names,state_names, proc_status.Active, time.Time 0 0 0 0 0)
-                 proc_map), 
-              proc_name) 
-            ps_map),
-          p_name) 
-        function_block_decl_list 
-        function_decl_list)))"
+ (case st of
+    (ST g_list pg_map pg_name fb_list f_list) \<Rightarrow>
+      (let (var_list, p_map,p_name) = (get_cur_prog_state st);
+           (process_vars, current_state, next_state, state_names, process_status, t) = (get_proc_state_by_prog_by_name (var_list,p_map,p_name) p_name)
+        in (ST g_list 
+          (fmupd 
+              pg_name 
+              (var_list,(fmupd 
+                 p_name 
+                 (process_vars, current_state, next_state, state_names, proc_status.Active, time.Time 0 0 0 0 0)
+                 p_map),p_name)
+              pg_map) 
+            pg_name fb_list f_list)))"
 declare reset_same_process_def [simp]
 
 definition inactive_same_process :: "model_state \<Rightarrow> model_state" where
 "inactive_same_process st =
-(case st of 
-(ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-(let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of
-                              Some(p_state) \<Rightarrow> p_state);
-        ((proc_var_list), st_name,next_state,state_names, proc_stat, cur_time) = (case (fmlookup proc_map proc_name) of 
-                                    Some(proc_state) \<Rightarrow> proc_state)
-  in (ST 
-        global_var_decl_list 
-        ((fmupd 
-            p_name
-            (var_list,(fmupd 
-                 proc_name
-                 ((proc_var_list), st_name,next_state,state_names, proc_status.Inactive, cur_time)
-                 proc_map), 
-              proc_name) 
-            ps_map),
-          p_name) 
-        function_block_decl_list 
-        function_decl_list)))"
+  (case st of
+    (ST g_list pg_map pg_name fb_list f_list) \<Rightarrow>
+      (let (var_list, p_map,p_name) = (get_cur_prog_state st);
+           (process_vars, current_state, next_state, state_names, process_status, t) = (get_proc_state_by_prog_by_name (var_list,p_map,p_name) p_name)
+        in (ST g_list 
+          (fmupd 
+              pg_name 
+              (var_list,(fmupd 
+                 p_name 
+                 (process_vars, current_state, next_state, state_names, proc_status.Inactive, t)
+                 p_map),p_name)
+              pg_map) 
+            pg_name fb_list f_list)))"
 declare inactive_same_process_def [simp]
 
 definition inactive_process :: "model_state \<Rightarrow> process_name \<Rightarrow> model_state" where
 "inactive_process st target_proc_name =
-   (case st of 
-      (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-(let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of
-                              Some(p_state) \<Rightarrow> p_state);
-        ((proc_var_list), st_name,next_state,state_names, proc_stat, cur_time) = (case (fmlookup proc_map target_proc_name) of 
-                                    Some(proc_state) \<Rightarrow> proc_state)
-    in (ST 
-        global_var_decl_list 
-        ((fmupd 
-            p_name
-            (var_list,(fmupd 
-                 target_proc_name
-                 ((proc_var_list), st_name,next_state,state_names, proc_status.Inactive, cur_time)
-                 proc_map), 
-              proc_name) 
-            ps_map),
-          p_name) 
-        function_block_decl_list 
-        function_decl_list)))"
+   (case st of
+    (ST g_list pg_map pg_name fb_list f_list) \<Rightarrow>
+      (let (var_list, p_map,p_name) = (get_cur_prog_state st);
+           (process_vars, current_state, next_state, state_names, process_status, t) = (get_proc_state_by_prog_by_name (var_list,p_map,p_name) target_proc_name)
+        in (ST g_list 
+          (fmupd 
+              pg_name 
+              (var_list,(fmupd 
+                 target_proc_name 
+                 (process_vars, current_state, next_state, state_names, proc_status.Inactive, t)
+                 p_map),p_name)
+              pg_map) 
+            pg_name fb_list f_list)))"
 declare inactive_process_def [simp]
 
 text "Setting new state by name in current process in model state"
 definition set_state :: "model_state \<Rightarrow> state_name \<Rightarrow> model_state" where
 "set_state st st_name = 
   (case st of
-(ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-(let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of
-                              Some(p_state) \<Rightarrow> p_state);
-        ((proc_var_list), _ ,state_names, proc_stat, cur_time) = (case (fmlookup proc_map proc_name) of 
-                                    Some(proc_state) \<Rightarrow> proc_state)
-  in (ST 
-        global_var_decl_list 
-        ((fmupd 
-            p_name
-            (var_list,(fmupd 
-                 proc_name
-                 ((proc_var_list), st_name,state_names, proc_stat, cur_time)
-                 proc_map), 
-              proc_name) 
-            ps_map),
-          p_name) 
-        function_block_decl_list 
-        function_decl_list)))"
+    (ST g_list pg_map pg_name fb_list f_list) \<Rightarrow>
+      (let (var_list, p_map,p_name) = (get_cur_prog_state st);
+           (process_vars, current_state, next_state, state_names, process_status, t) = (get_proc_state_by_prog_by_name (var_list,p_map,p_name) p_name)
+        in (ST g_list 
+          (fmupd 
+              pg_name 
+              (var_list,(fmupd 
+                 p_name 
+                 (process_vars, current_state, st_name, state_names, process_status, t)
+                 p_map),p_name)
+              pg_map) 
+            pg_name fb_list f_list)))"
 declare set_state_def [simp]
 
 definition get_timeout :: "model_state \<Rightarrow> stacked_state \<Rightarrow> time" where
@@ -542,16 +494,16 @@ declare get_timeout_def [simp]
 
 definition get_same_time :: "model_state \<Rightarrow> time" where
 "get_same_time st = 
- (case st of (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-    (let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of Some(p_state) \<Rightarrow> p_state);
-        ((proc_var_list),st_name,next_state,state_names, proc_stat, cur_time) = (case (fmlookup proc_map proc_name) of Some(proc_state) \<Rightarrow> proc_state)
-  in cur_time)) "
+ (case st of (ST global_var_decl_list pg_map p_name function_block_decl_list function_decl_list) \<Rightarrow>
+    (let (var_list,proc_map, proc_name) = (case (fmlookup pg_map p_name) of Some(p_state) \<Rightarrow> p_state);
+        (proc_vars,st_name,next_state,state_names, proc_stat, cur_time) = (case (fmlookup proc_map proc_name) of Some(proc_state) \<Rightarrow> proc_state)
+    in cur_time)) "
 declare get_same_time_def [simp]
 
 definition get_time :: "model_state \<Rightarrow> process_name \<Rightarrow> time" where
 "get_time st proc_name= 
- (case st of (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-    (let (var_list,proc_map, _) = (case (fmlookup ps_map p_name) of Some(p_state) \<Rightarrow> p_state);
+ (case st of (ST global_var_decl_list pg_map pg_name  function_block_decl_list function_decl_list) \<Rightarrow>
+    (let (var_list,proc_map, _) = (case (fmlookup pg_map pg_name) of Some(p_state) \<Rightarrow> p_state);
         ((proc_var_list),st_name,next_state,state_names, proc_stat, cur_time) = (case (fmlookup proc_map proc_name) of Some(proc_state) \<Rightarrow> proc_state)
   in cur_time)) "
 declare get_time_def [simp]
@@ -564,52 +516,51 @@ declare get_next_state_name.simps [simp]
 
 definition set_next_state_next :: "model_state \<Rightarrow> model_state" where
 "set_next_state_next st = 
- (case st of (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-    (let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of Some(p_state) \<Rightarrow> p_state);
+ (case st of (ST global_var_decl_list pg_map pg_name function_block_decl_list function_decl_list) \<Rightarrow>
+    (let (var_list,proc_map, proc_name) = (case (fmlookup pg_map pg_name) of Some(p_state) \<Rightarrow> p_state);
         ((proc_var_list),st_name,next_state,state_names, proc_stat, cur_time) = (case (fmlookup proc_map proc_name) of 
                                     Some(proc_state) \<Rightarrow> proc_state);
     next_state_name = get_next_state_name state_names st_name
-  
   in (ST 
         global_var_decl_list 
-        ((fmupd 
-            p_name
+        (fmupd 
+            pg_name
             (var_list,(fmupd 
                  proc_name
                  ((proc_var_list), st_name,next_state_name,state_names, proc_stat, cur_time)
                  proc_map), 
               proc_name) 
-            ps_map),
-          p_name) 
+            pg_map)
+          pg_name 
         function_block_decl_list 
         function_decl_list))) " 
 declare set_next_state_next_def [simp]
 
 definition set_into_next_state :: "model_state \<Rightarrow> model_state" where
 "set_into_next_state st = 
- (case st of (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-    (let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of Some(p_state) \<Rightarrow> p_state);
+ (case st of (ST global_var_decl_list pg_map pg_name  function_block_decl_list function_decl_list) \<Rightarrow>
+    (let (var_list,proc_map, proc_name) = (case (fmlookup pg_map pg_name) of Some(p_state) \<Rightarrow> p_state);
         ((proc_var_list),st_name,next_state,state_names, proc_stat, cur_time) = (case (fmlookup proc_map proc_name) of 
                                     Some(proc_state) \<Rightarrow> proc_state) 
   in (ST 
         global_var_decl_list 
-        ((fmupd 
-            p_name
+        (fmupd 
+            pg_name
             (var_list,(fmupd 
                  proc_name
                  ((proc_var_list), next_state,next_state,state_names, proc_stat, cur_time)
                  proc_map), 
               proc_name) 
-            ps_map),
-          p_name) 
+            pg_map)
+          pg_name 
         function_block_decl_list 
         function_decl_list))) " 
 declare set_into_next_state_def [simp]
 
 definition extr_timeout_stmt :: "model_state \<Rightarrow> timeout \<Rightarrow> (stmt option)" where
 "extr_timeout_stmt st timeo = 
-  (case st of (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-    (let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of Some(p_state) \<Rightarrow> p_state);
+  (case st of (ST global_var_decl_list pg_map pg_name function_block_decl_list function_decl_list) \<Rightarrow>
+    (let (var_list,proc_map, proc_name) = (case (fmlookup pg_map pg_name) of Some(p_state) \<Rightarrow> p_state);
         ((proc_var_list),st_name,next_state,state_names, proc_stat, cur_time) = (case (fmlookup proc_map proc_name) of 
                                     Some(proc_state) \<Rightarrow> proc_state) 
   in (case timeo of
@@ -667,18 +618,17 @@ declare update_processes_in_vars_def [simp]
 
 definition process_vars_distribution :: "model_state \<Rightarrow> model_state" where
 "process_vars_distribution st = 
-  (case st of (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-    (let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of Some(p_state) \<Rightarrow> p_state);
+  (case st of (ST global_var_decl_list pg_map pg_name f1 f2) \<Rightarrow>
+    (let (var_list,proc_map, proc_name) = (case (fmlookup pg_map pg_name) of Some(p_state) \<Rightarrow> p_state);
         put_vars = gather_processes_out_vars proc_map 
   in (ST global_var_decl_list 
       (fmupd
-        p_name
+        pg_name
         (var_list,
           update_processes_in_vars proc_map put_vars,
           proc_name)
-        ps_map
-        ,p_name)
-      function_block_decl_list function_decl_list)))"
+        pg_map)
+      pg_name f1 f2)))"
 declare process_vars_distribution_def [simp]
 
 text "gather Out and InOut vars from program vars"
@@ -731,12 +681,11 @@ declare update_programs_in_vars_def [simp]
 
 definition program_vars_distribution :: "model_state \<Rightarrow> model_state" where
 "program_vars_distribution st = 
-  (case st of (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
+  (case st of (ST global_var_decl_list ps_map p_name f1 f2) \<Rightarrow>
     (let put_vars = gather_programs_out_vars ps_map 
   in (ST global_var_decl_list
-      (update_programs_in_vars ps_map put_vars,
-      p_name)
-      function_block_decl_list function_decl_list)))"
+      (update_programs_in_vars ps_map put_vars)
+      p_name f1 f2)))"
 declare program_vars_distribution_def [simp]
 
 (*
@@ -761,11 +710,11 @@ declare add_time_to_processes_def [simp]
 *)
 definition add_time_to_active_processes :: "model_state \<Rightarrow> time \<Rightarrow> model_state" where
 "add_time_to_active_processes st t = 
-  (case st of (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-    (let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of Some(p_state) \<Rightarrow> p_state)
+  (case st of (ST global_var_decl_list pg_map pg_name function_block_decl_list function_decl_list) \<Rightarrow>
+    (let (var_list,proc_map, proc_name) = (case (fmlookup pg_map pg_name) of Some(p_state) \<Rightarrow> p_state)
   in (ST 
         global_var_decl_list 
-        ((fmmap
+        (fmmap
             (\<lambda>(vars,pc_map,pc_name). 
               (vars,
               fmmap
@@ -773,16 +722,16 @@ definition add_time_to_active_processes :: "model_state \<Rightarrow> time \<Rig
                 (v1,v2,v3,v4,stat, (if (proc_status_is stat proc_status.Active) then (time_sum t1 t) else t1)))
               pc_map,
               pc_name))
-            ps_map),
-          p_name) 
+            pg_map)
+          pg_name
         function_block_decl_list 
         function_decl_list)))"
 declare add_time_to_active_processes_def [simp]
 
 definition is_process_active :: "model_state \<Rightarrow> process_name \<Rightarrow> bool" where
 "is_process_active st name = 
-  (case st of (ST global_var_decl_list (ps_map,p_name) function_block_decl_list function_decl_list) \<Rightarrow>
-    (let (var_list,proc_map, proc_name) = (case (fmlookup ps_map p_name) of Some(p_state) \<Rightarrow> p_state);
+  (case st of (ST global_var_decl_list pg_map pg_name function_block_decl_list function_decl_list) \<Rightarrow>
+    (let (var_list,proc_map, proc_name) = (case (fmlookup pg_map pg_name) of Some(p_state) \<Rightarrow> p_state);
          (_,_,_,_,status,_) = (case (fmlookup proc_map name) of Some(proc_state) \<Rightarrow> proc_state)
     in (proc_status_is status proc_status.Active)))"
 declare is_process_active_def [simp]
@@ -814,13 +763,9 @@ datatype model_state = ST
                        "(function_decl list)"
 *)
 
-definition gen_proxy_for_func :: "model_state \<Rightarrow> stacked_func \<Rightarrow> model_state" where
-"gen_proxy_for_func st func = 
-  (let (name,val,vars,stm) = func
-  in (ST 
-      fmempty
-      (fmap_of_list [])
-      fmempty
-      (snd (snd (snd (snd st))))))"
+definition get_func :: "model_state \<Rightarrow> func_name \<Rightarrow> stacked_func" where
+"get_func st name = 
+  (case st of (ST _ _ _ _ f_map) \<Rightarrow> the (fmlookup f_map name))"
+declare get_func_def [simp] 
 
 end

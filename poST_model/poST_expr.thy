@@ -22,6 +22,8 @@ SymbolicVar symbolic_var |
 ArrayVar symbolic_var expr |
 ProcStatEpxr process_name proc_status | 
 FunctionCall func_name "param_assign list"	
-  and param_assign =SymbolicVar  symbolic_var assign_type expr 
+  and param_assign =SymbolicVar symbolic_var assign_type expr 
+
+type_synonym func_params = "param_assign list"
 
 end

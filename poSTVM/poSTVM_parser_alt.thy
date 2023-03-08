@@ -374,14 +374,14 @@ declare stack_func_vars_def [simp]
 type_synonym stacked_func_block = "func_block_name * stacked_func_block_var list * stacked_process list"
 
 type_synonym stacked_func = "func_name * basic_post_type * stacked_func_vars * stmt"
-
+type_synonym stacked_funcs = "(func_name,stacked_func) fmap"
 definition stack_function :: "function_decl \<Rightarrow> stacked_func" where
 "stack_function fd = 
   (let (f_name,val,vars,st_list) = fd
   in (f_name,val,(stack_func_vars vars),(st_list_to_stmt st_list)))"
 declare stack_function_def [simp]
 
-definition stack_functions :: "function_decl list \<Rightarrow> (func_name,stacked_func) fmap" where
+definition stack_functions :: "function_decl list \<Rightarrow> stacked_funcs" where
 "stack_functions fd_list = fmap_of_list (map (\<lambda>fd. (fst fd, stack_function fd)) fd_list)"
 declare stack_functions_def [simp]
 
@@ -404,7 +404,7 @@ definition stack_global_vars :: "global_var_decl list \<Rightarrow> stacked_glob
 declare stack_global_vars_def [simp]
 
 (*TO DO stacking configuration, function blocks and functions*)
-type_synonym stacked_model = "(configuration_decl option) * stacked_global_vars * (stacked_program list) * (function_block_decl list) * ((func_name,stacked_func)fmap)"
+type_synonym stacked_model = "(configuration_decl option) * stacked_global_vars * (stacked_program list) * (function_block_decl list) * stacked_funcs"
 
 text "Converting model declaration to stacked version"
 definition stack_model :: "model \<Rightarrow> stacked_model" where

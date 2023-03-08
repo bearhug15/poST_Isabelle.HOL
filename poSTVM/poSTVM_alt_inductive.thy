@@ -37,7 +37,9 @@ type_synonym exec_res = "statement_result * model_state"
 
 inductive 
   eval :: "[model_state, expr, basic_post_type] \<Rightarrow> bool" ("_ \<turnstile> _ \<rightarrow> _") and
-  exec :: "[statement_result * model_state,stmt,statement_result * model_state] \<Rightarrow> bool" ("_ \<turnstile> _ \<longrightarrow> _")
+  exec :: "[statement_result * model_state,stmt,statement_result * model_state] \<Rightarrow> bool" ("_ \<turnstile> _ \<longrightarrow> _") and
+  exec_func :: "[model_state,func_name,func_params,model_state*basic_post_type] \<Rightarrow> bool" ("_\<turnstile>_,_\<longrightarrow> _") and
+  assign_param :: "[model_state,assign_type,param_assign list,model_state,model_state] \<Rightarrow> bool"
   where
     BinOp : "\<lbrakk>st\<turnstile>exp1\<rightarrow>val1;
               st\<turnstile>exp2\<rightarrow>val2;
@@ -101,8 +103,27 @@ inductive
                 st\<turnstile>stmt.SetStateSt st_name_option\<longrightarrow>st1"
   | Reset : "st\<turnstile>stmt.ResetSt\<longrightarrow>(statement_result.Continue,reset_timer( snd st))"
 
+  | FuncStep : "\<lbrakk>(f_name,res,vars,stmts) = (get_func st name);
+                  proxy_state = gen_proxy_for_func (get_func st name);
+                  assign_param st assign_type.ColonEq params proxy_state as_proxy_state;
+                  (statement_result.Continue, as_proxy_state)\<turnstile>stmts\<longrightarrow>(st_res,st1);
+                  assign_param st1 assign_type.Conseq params st new_st;
+                  res = (get_symbvar_by_name st1 f_name)\<rbrakk>\<Longrightarrow>
+                st\<turnstile>name,params\<longrightarrow>(new_st,res)"
+  | AssignPNill : "assign_param base_st type [] st st"
+  | AssignPConsCol : "\<lbrakk>base_st \<turnstile> exp \<rightarrow> val;  
+                        (case as_type of 
+                          assign_type.ColonEq => (assign_param base_st assign_type.ColonEq other (set_symbvar st name val) new_st)
+                        | assign_type.Conseq => (assign_param base_st assign_type.ColonEq other st new_st))\<rbrakk> \<Longrightarrow> 
+                      assign_param base_st assign_type.ColonEq ((param_assign.SymbolicVar name as_type exp)#other) st new_st"
+  | AssignPConsCon : "\<lbrakk>base_st \<turnstile> exp \<rightarrow> val;  
+                        (case as_type of 
+                          assign_type.ColonEq => (assign_param base_st assign_type.Conseq other st new_st)
+                        | assign_type.Conseq => (assign_param base_st assign_type.Conseq other (set_symbvar st name val) new_st))\<rbrakk> \<Longrightarrow> 
+                      assign_param base_st assign_type.Conseq ((param_assign.SymbolicVar name as_type exp)#other) st new_st"
 print_theorems
 (*
+
 declare eval.simps [simp]
 declare exec.simps [simp]*)
 declare BinOp [simp]

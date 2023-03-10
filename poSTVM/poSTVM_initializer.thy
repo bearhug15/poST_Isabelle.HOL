@@ -15,11 +15,11 @@ fun exec_sev_expr :: "nat \<Rightarrow> expr_stack \<Rightarrow> model_state \<R
 | "exec_sev_expr (Suc n) ((expr_op.Value val)#other) st = 
     (Some val)#(exec_sev_expr n other st)"
 | "exec_sev_expr (Suc n) ((expr_op.Get var_name)#other) st = 
- (Some (get_symbvar_by_name st var_name))#(exec_sev_expr n other st) " 
+ (Some (get_cur_symbvar_by_name st var_name))#(exec_sev_expr n other st) " 
 
 | "exec_sev_expr (Suc n) ((expr_op.GetArray var_name) #other) st =
   (case (exec_sev_expr (Suc n) other st)
-    of (first#rest) \<Rightarrow> (Some (get_arvar_by_name st var_name (the first)))#rest )" 
+    of (first#rest) \<Rightarrow> (Some (get_cur_arvar_by_name_by_pos st var_name (the first)))#rest )" 
 
 | "exec_sev_expr (Suc n) ((expr_op.CheckProcStat proc_name proc_stat)#other) st = 
   (Some (check_proc_status st proc_name proc_stat))#(exec_sev_expr n other st)" 
@@ -149,6 +149,7 @@ definition initialize_stacked_global_vars :: "model_state \<Rightarrow> stacked_
     vars)"
 declare initialize_stacked_global_vars_def [simp]
 
+text "Initialization of global_vars in model state"
 definition initialize_global_vars :: "model_state \<Rightarrow> model_state" where
 "initialize_global_vars st =
   (case st of (model_state.ST global_vars program_map cur_prog_name f1 f2) \<Rightarrow> 
@@ -191,6 +192,7 @@ definition extract_model_state :: "stacked_model \<Rightarrow> model_state" wher
     in (model_state.ST global prog_map name f1 f2)))"
 declare extract_model_state_def [simp]
 
+text "Initialization of model state"
 definition initialize_model_state :: "stacked_model \<Rightarrow> model_state" where
 "initialize_model_state smodel = 
   (let new_model = extract_model_state smodel;
@@ -200,6 +202,7 @@ definition initialize_model_state :: "stacked_model \<Rightarrow> model_state" w
     in new_model)"
 declare initialize_model_state_def [simp]
 
+text "Transforming function vars to process vars"
 definition transform_func_to_proc_vars :: "stacked_func_vars \<Rightarrow> func_name \<Rightarrow> basic_post_type \<Rightarrow> stacked_proc_vars" where
 "transform_func_to_proc_vars vars name val = 
  (fmupd 
@@ -214,6 +217,7 @@ definition transform_func_to_proc_vars :: "stacked_func_vars \<Rightarrow> func_
     vars))"
 declare transform_func_to_proc_vars_def [simp]
 
+text "Generate stacked model based on stacked function"
 definition stacked_func_to_stacked_model :: "stacked_func \<Rightarrow> stacked_model" where
 "stacked_func_to_stacked_model sf = 
   (let (f_name,value,vars,stmts )= sf 
@@ -224,6 +228,7 @@ definition stacked_func_to_stacked_model :: "stacked_func \<Rightarrow> stacked_
       [],fmempty))"
 declare stacked_func_to_stacked_model_def [simp]
 
+text "Generate proxy model state for stacked model"
 definition gen_proxy_for_func :: "model_state \<Rightarrow> stacked_func \<Rightarrow> model_state" where
 "gen_proxy_for_func st func = 
   (case (st,(initialize_model_state (stacked_func_to_stacked_model func))) of 

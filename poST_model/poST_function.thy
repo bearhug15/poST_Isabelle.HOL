@@ -6,8 +6,10 @@ datatype func_var =
   InVar in_var_decl |
   OutVar out_var_decl |
   InOutVar inout_var_decl
-
-type_synonym function_decl = "func_name * basic_post_type * (func_var list)* statement_list"
+type_synonym function_decl = "func_name * 
+                              basic_post_type *
+                              (func_var list)* 
+                              statement_list"
 
 translations
   (type) "function_decl" <= (type) "func_name * basic_post_type * (func_var list)* statement_list"

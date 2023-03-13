@@ -10,8 +10,10 @@ datatype proc_var = Var var_decl |
                     InOutVar inout_var_decl |
                     InVar in_var_decl |
                     OutVar out_var_decl
-
-type_synonym process_decl = "process_name * (proc_var list) * (state_decl list)"
+type_synonym process_decl = 
+              "process_name * 
+               (proc_var list) * 
+               (state_decl list)"
 
 translations
   (type) "process_var_init_decl" <= (type) "(process_var list) * process_name"

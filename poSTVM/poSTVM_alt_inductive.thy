@@ -82,8 +82,8 @@ inductive
                 (snd st)\<turnstile>pos\<rightarrow>val2;
                 st1 = (set_arvar (snd st) var_name val2 val1)\<rbrakk>\<Longrightarrow>
               st\<turnstile>stmt.AssignSt (common_var.Array var_name pos, exp)\<longrightarrow>(statement_result.Continue, st1)"
-  | Return : "st\<turnstile>stmt.Return\<longrightarrow>(statement_result.Return, snd st)"
-  | Exit : "st\<turnstile>stmt.Exit\<longrightarrow>(statement_result.Exit, snd st)"
+  | Return : "st\<turnstile>stmt.Return\<longrightarrow>(statement_result.Continue, snd st)"
+  | Exit : "st\<turnstile>stmt.Exit\<longrightarrow>(statement_result.Continue, snd st)"
   | Process : "\<lbrakk>st2 = (case ps of
                           process_statement.Start name_option \<Rightarrow> 
                             (case name_option of
@@ -165,8 +165,10 @@ inductive eval_process :: "[model_state,stacked_process,model_state] \<Rightarro
     ProcStep : "\<lbrakk> new_st = (set_cur_proc_name st name);
                   new_st\<turnstile>(get_state_by_name state_list (get_cur_proc_state_name new_st)) :(res,st1);
                   st2 = (case res of 
-                          statement_result.Continue \<Rightarrow> st1);
-                  st3 = (process_vars_distribution (set_into_next_state st2))\<rbrakk> \<Longrightarrow> 
+                          statement_result.Continue \<Rightarrow> st1
+                        | statement_result.Exit \<Rightarrow> stop_same_process st1
+                        | statement_result.Return \<Rightarrow> st1);
+                  st3 = (set_into_next_state st2)\<rbrakk> \<Longrightarrow> 
                 st\<turnstile>(name,var_list,state_list) \<Rightarrow> st3"
   | ProcNil : "st\<turnstile>[][\<Rightarrow>]st"
   | ProcCons : "\<lbrakk>(if (is_process_active st (fst pr)) then st\<turnstile>pr\<Rightarrow>st1 else st\<turnstile>[][\<Rightarrow>]st1);

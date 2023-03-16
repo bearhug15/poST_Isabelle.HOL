@@ -1,9 +1,6 @@
 theory poST_test
-  imports "~~/poST/poSTVM/poSTVM_initializer"
-          "~~/poST/poSTVM/poSTVM_alt_inductive"
+  imports "~~/poST/poSTVM/poSTVM_alt_inductive"
 begin
-
-declare fmupd_reorder_neq [simp]
 
 value "fmempty :: (nat,nat) fmap"
 definition test_process_state1 :: "process_state" where
@@ -25,12 +22,13 @@ definition test_program_state1 :: "program_state" where
 definition test_ms1 :: "model_state" where
 "test_ms1 = model_state.ST
   fmempty
-  ((fmupd
+  (fmupd
     ''program1''
     test_program_state1
-    fmempty),''program1'')
+    fmempty)
+  ''program1''
   []
-  []"
+  fmempty"
 
 definition test_process_state2 :: "process_state" where
 "test_process_state2 = 
@@ -51,12 +49,13 @@ definition test_program_state2 :: "program_state" where
 definition test_ms2 :: "model_state" where
 "test_ms2 = model_state.ST
   fmempty
-  ((fmupd
+  (fmupd
     ''program1''
     test_program_state2
-    fmempty),''program1'')
+    fmempty)
+  ''program1''
   []
-  []"
+  fmempty"
 
 
 
@@ -95,12 +94,13 @@ definition test_program_state3 :: "program_state" where
 definition test_ms3 :: "model_state" where
 "test_ms3 = model_state.ST
   fmempty
-  ((fmupd
+  (fmupd
     ''program1''
     test_program_state3
-    fmempty),''program1'')
+    fmempty)
+  ''program1''
   []
-  []"
+  fmempty"
 
 definition test_statement2 :: "stmt" where
 "test_statement2 = stmt.AssignSt (common_var.Symbolic ''var1'',
@@ -142,12 +142,13 @@ definition test_program_state4 :: "program_state" where
 definition test_ms4 :: "model_state" where
 "test_ms4 = model_state.ST
   fmempty
-  ((fmupd
+  (fmupd
     ''program1''
     test_program_state4
-    fmempty),''program1'')
+    fmempty)
+  ''program1''
   []
-  []"
+  fmempty"
 
 definition test_process_state5 :: "process_state" where
 "test_process_state5 = 
@@ -169,12 +170,13 @@ definition test_program_state5 :: "program_state" where
 definition test_ms5 :: "model_state" where
 "test_ms5 = model_state.ST
   fmempty
-  ((fmupd
+  (fmupd
     ''program1''
     test_program_state5
-    fmempty),''program1'')
+    fmempty)
+  ''program1''
   []
-  []"
+  fmempty"
 
 definition test_statement3 :: "stmt" where
 "test_statement3 = stmt.Comb
@@ -235,12 +237,13 @@ definition test_program_state6 :: "program_state" where
 definition test_ms6 :: "model_state" where
 "test_ms6 = model_state.ST
   fmempty
-  ((fmupd
+  (fmupd
     ''program1''
     test_program_state6
-    fmempty),''program1'')
+    fmempty)
+  ''program1''
   []
-  []"
+  fmempty"
 
 (*
 var1 = var1 + 1;
@@ -306,59 +309,13 @@ definition test_program_state7 :: "program_state" where
 definition test_ms7 :: "model_state" where
 "test_ms7 = model_state.ST
   fmempty
-  ((fmupd
+  (fmupd
     ''program1''
     test_program_state7
-    fmempty),''program1'')
+    fmempty)
+  ''program1''
   []
-  []"
-(*
-definition statement5 :: "statement" where
-"statement5 = statement.IterSt (iter_statement.RepeatSt
-  [(statement.AssignSt (common_var.Symbolic ''var1'', (expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2)))))]
-  (expr.Binary binary_op.More (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 5))))"
-(*
-definition test_statement5 :: "stmt" where 
-"test_statement5 = statement_to_stmt (statement5)" 
-
-value "test_statement5"
-*)
-definition test_statement5 :: "stmt" where
-"test_statement5 = 
-Comb
-  (Comb
-    (stmt.AssignSt
-      (common_var.Symbolic ''var1'', expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2))))
-    Blank)
-  (stmt.WhileSt (expr.Binary More (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 5)))
-    (Comb
-      (stmt.AssignSt
-        (common_var.Symbolic ''var1'', expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2))))
-      Blank))"
-
-lemma "(statement_result.Continue,test_ms4)\<turnstile> test_statement5 \<longrightarrow> (statement_result.Continue,test_ms7)"
-  apply (auto simp add: test_statement5_def 
-                test_ms4_def test_process_state4_def test_program_state4_def
-                test_ms7_def test_process_state7_def test_program_state7_def)
-  apply (rule Comb)
-   apply (rule Comb)
-    apply (rule AssignS)
-     apply (rule BinOp)
-       apply (rule Var)
-       apply (auto)
-    apply (rule Const)
-    apply (auto)
-   apply (rule Blank)
-  apply (auto)
-  apply (rule LoopT)
-     apply (rule BinOp)
-       apply (rule Var)
-       apply (auto)
-     apply (rule Const)
-     apply (auto)
-
-  done
-*)
+  fmempty"
 
 definition statement6 :: "statement" where
 "statement6 = statement.IterSt (iter_statement.RepeatSt
@@ -432,63 +389,6 @@ lemma "(statement_result.Continue,test_ms4)\<turnstile> test_statement6 \<longri
    apply (auto)
   done
 
-(*
-definition Turnstile :: "model" where
-"Turnstile = 
-  (None,[],
-  [(''Turnstile'',
-    [(program_var.InVar (fmap_of_list [(''token'',var_init_decl.Simple (basic_post_type.Bool False,None)),
-                                       (''card'',var_init_decl.Simple (basic_post_type.Bool False,None)),
-                                       (''passing'',var_init_decl.Simple (basic_post_type.Bool False,None))])),
-     (program_var.OutVar (fmap_of_list [(''turnstile'',var_init_decl.Simple (basic_post_type.Bool False,None)),
-                                        (''LED'',var_init_decl.Simple (basic_post_type.Bool False,None)),
-                                        (''cardReader'',var_init_decl.Simple (basic_post_type.Bool False,None)),
-                                        (''coinReceiver'',var_init_decl.Simple (basic_post_type.Bool False,None))])),
-     (program_var.Var (True,fmap_of_list [(''PRESENT'',var_init_decl.Simple (basic_post_type.Bool False,Some (expr.Const (const.Bool True)))),
-                                          (''NOT_PRESENT'',var_init_decl.Simple (basic_post_type.Bool False,Some (expr.Const (const.Bool False)))),
-                                          (''OPEN'',var_init_decl.Simple (basic_post_type.Bool False,Some (expr.Const (const.Bool True)))),
-                                          (''CLOSED'',var_init_decl.Simple (basic_post_type.Bool False,Some (expr.Const (const.Bool False)))),
-                                          (''BLOCKED'',var_init_decl.Simple (basic_post_type.Bool False,Some (expr.Const (const.Bool True)))),
-                                          (''UNBLOCKED'',var_init_decl.Simple (basic_post_type.Bool False,Some (expr.Const (const.Bool False)))),
-                                          (''ACK_DURATION'',var_init_decl.Simple (basic_post_type.Time (time.Time 0 0 0 0 0),Some (expr.Const (const.Time (time.Time 0 0 0 0 100)))))]))],
-    [(''controller'',
-      [],
-      [(),() ::state_decl]) :: process_decl]) :: program_decl],
-  [],[])"
-*)
 
-definition HandDryer :: "model" where
-"HandDryer = 
-  (None,[],
-  [(''HandDryer'',
-    [(program_var.InVar (fmap_of_list [(''hands'',var_init_decl.Simple (basic_post_type.Bool False,None))])),
-     (program_var.OutVar (fmap_of_list [(''control'',var_init_decl.Simple (basic_post_type.Bool False,None))]))],
-    [(''HandDryer'',
-     [],
-     [(''Wait'',
-       False,
-       [(statement.SelectSt 
-          (select_statement.IfSt [(expr.SymbolicVar ''hands'',
-                                  [statement.AssignSt (common_var.Symbolic ''control'',expr.Const (const.Bool True)),
-                                   statement.SetStateSt None])] None))],
-       None),
-       (''Work'',
-        False,
-        [(statement.SelectSt 
-          (select_statement.IfSt [(expr.SymbolicVar ''hands'',
-                                  [statement.ResetSt])] None))],
-        Some (timeout_statement.Const 
-              (const.Time (time.Time 0 0 0 2 0))
-              [statement.AssignSt (common_var.Symbolic ''control'',expr.Const (const.Bool False)),
-               statement.SetStateSt None]))
-    :: state_decl]) 
-  :: process_decl]):: program_decl],
-  [],[]) "
-
-definition stacked_HandDryer :: "stacked_model" where
-"stacked_HandDryer = stack_model HandDryer"
-
-value "stacked_HandDryer"
-value "initialize_model_state stacked_HandDryer"
 
 end

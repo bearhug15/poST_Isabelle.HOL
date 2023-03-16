@@ -125,9 +125,10 @@ inductive
 
 print_theorems
 (*
-
 declare eval.simps [simp]
-declare exec.simps [simp]*)
+declare exec.simps [simp]
+*)
+(*
 declare BinOp [simp]
 declare UnOp [simp]
 declare Var [simp]
@@ -145,7 +146,7 @@ declare Exit [simp]
 declare Process [simp]
 declare SetState [simp]
 declare Reset [simp]
-(**)
+*)
 inductive eval_state :: "[model_state,stacked_state,statement_result * model_state] \<Rightarrow> bool" ("_ \<turnstile> _ : _") where
     StateStep : "\<lbrakk>(statement_result.Continue,st)\<turnstile>stm\<longrightarrow>(res,st1);
                   (case res of 
@@ -164,16 +165,19 @@ inductive eval_process :: "[model_state,stacked_process,model_state] \<Rightarro
     ProcStep : "\<lbrakk> new_st = (set_cur_proc_name st name);
                   new_st\<turnstile>(get_state_by_name state_list (get_cur_proc_state_name new_st)) :(res,st1);
                   st2 = (case res of 
-                          statement_result.Continue \<Rightarrow> st1
-                        | statement_result.Exit \<Rightarrow> stop_same_process st1
-                        | statement_result.Return \<Rightarrow> st1);
+                          statement_result.Continue \<Rightarrow> st1);
                   st3 = (process_vars_distribution (set_into_next_state st2))\<rbrakk> \<Longrightarrow> 
                 st\<turnstile>(name,var_list,state_list) \<Rightarrow> st3"
   | ProcNil : "st\<turnstile>[][\<Rightarrow>]st"
   | ProcCons : "\<lbrakk>(if (is_process_active st (fst pr)) then st\<turnstile>pr\<Rightarrow>st1 else st\<turnstile>[][\<Rightarrow>]st1);
                  st1\<turnstile>other[\<Rightarrow>]st2 \<rbrakk> \<Longrightarrow> 
                 st\<turnstile>(pr#other)[\<Rightarrow>]st2"
-
+(*
+st2 = (case res of 
+        statement_result.Continue \<Rightarrow> st1
+      | statement_result.Exit \<Rightarrow> stop_same_process st1
+      | statement_result.Return \<Rightarrow> st1);
+*)
 
 inductive eval_program :: "[model_state,stacked_program,model_state] \<Rightarrow> bool" ("_\<turnstile>_\<Longrightarrow>_") and
           evals_program :: "[model_state,stacked_program list,model_state] \<Rightarrow> bool" ("_\<turnstile>_[\<Longrightarrow>]_") where
@@ -188,10 +192,15 @@ inductive eval_program :: "[model_state,stacked_program,model_state] \<Rightarro
 
 
 inductive eval_model :: "[time,model_state,stacked_model,model_state] \<Rightarrow> bool" ("_:_\<turnstile>_\<mapsto>_") where
-    ModelStep : "\<lbrakk>st\<turnstile>prog_list[\<Longrightarrow>]st1;
-                  st2 = program_vars_distribution st1;
-                  st3 = add_time_to_active_processes st2 t\<rbrakk> \<Longrightarrow>
-                t:st\<turnstile>(_,_,prog_list,_,_)\<mapsto>st3"
+    ModelStep : "\<lbrakk>(add_time_to_active_processes st t)\<turnstile>prog_list[\<Longrightarrow>]st1;
+                  st2 = program_vars_distribution st1\<rbrakk> \<Longrightarrow>
+                t:st\<turnstile>(_,_,prog_list,_,_)\<mapsto>st2"
+
+inductive model_steps :: "[nat,time,model_state,stacked_model,model_state] \<Rightarrow> bool" ("_\<Zspot>_:_\<turnstile>_\<mapsto>_") where
+    ModelNil : "0\<Zspot>t:st\<turnstile>model\<mapsto>st"
+  | ModelCons : "\<lbrakk>t:st\<turnstile>model\<mapsto>st1;
+                  n\<Zspot>t:st1\<turnstile>model\<mapsto>st2\<rbrakk> \<Longrightarrow> 
+                (Suc n)\<Zspot>t:st\<turnstile>model\<mapsto>st2"
 
 (*
 apply (simp add: const_to_basic_def

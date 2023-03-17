@@ -60,7 +60,7 @@ definition test_ms2 :: "model_state" where
 
 
 definition test_statement1 :: "stmt" where
-"test_statement1 = stmt.AssignSt (common_var.Symbolic ''var1'',expr.Const (const.Nat 1))"
+"test_statement1 = stmt.AssignSt (common_var.Symbolic ''var1'') (expr.Const (const.Nat 1))"
 
 lemma "(statement_result.Continue,test_ms1)\<turnstile>test_statement1\<longrightarrow>(statement_result.Continue,test_ms2)"
   apply (auto simp add: test_statement1_def 
@@ -103,8 +103,8 @@ definition test_ms3 :: "model_state" where
   fmempty"
 
 definition test_statement2 :: "stmt" where
-"test_statement2 = stmt.AssignSt (common_var.Symbolic ''var1'',
-  expr.Binary (binary_op.Sum) (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2)))"
+"test_statement2 = stmt.AssignSt (common_var.Symbolic ''var1'')
+  (expr.Binary (binary_op.Sum) (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2)))"
 
 lemma "(statement_result.Continue,test_ms1)\<turnstile>test_statement2\<longrightarrow>(statement_result.Continue,test_ms3)"
   apply (simp add: test_statement2_def 
@@ -180,9 +180,9 @@ definition test_ms5 :: "model_state" where
 
 definition test_statement3 :: "stmt" where
 "test_statement3 = stmt.Comb
-  (stmt.AssignSt (common_var.Symbolic ''var1'',
+  (stmt.AssignSt (common_var.Symbolic ''var1'')(
     expr.Binary (binary_op.Sum) (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 1))))
-  (stmt.AssignSt (common_var.Symbolic ''var2'',
+  (stmt.AssignSt (common_var.Symbolic ''var2'')(
     expr.Binary (binary_op.Sum) (expr.SymbolicVar ''var2'') (expr.Const (const.Nat 2))))"
 
 find_theorems "Suc (Suc 0)"
@@ -255,13 +255,13 @@ ELSE
 *)
 definition test_statement4 :: "stmt" where
 "test_statement4 = stmt.Comb
-  (stmt.AssignSt (common_var.Symbolic ''var1'',
+  (stmt.AssignSt (common_var.Symbolic ''var1'')(
     expr.Binary (binary_op.Sum) (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 1))))
   (stmt.IfSt 
     (expr.Binary binary_op.Eq (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 1)))
-    (stmt.AssignSt (common_var.Symbolic ''var2'',
+    (stmt.AssignSt (common_var.Symbolic ''var2'')(
       expr.Binary (binary_op.Sum) (expr.SymbolicVar ''var2'') (expr.Const (const.Nat 3))))
-    (stmt.AssignSt (common_var.Symbolic ''var2'',
+    (stmt.AssignSt (common_var.Symbolic ''var2'')(
       expr.Binary (binary_op.Sub) (expr.SymbolicVar ''var2'') (expr.Const (const.Nat 2)))))"
 
 lemma "(statement_result.Continue,test_ms4)\<turnstile>test_statement4 \<longrightarrow> (statement_result.Continue,test_ms6)"
@@ -319,7 +319,7 @@ definition test_ms7 :: "model_state" where
 
 definition statement6 :: "statement" where
 "statement6 = statement.IterSt (iter_statement.RepeatSt
-  [(statement.AssignSt (common_var.Symbolic ''var1'', (expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2)))))]
+  [(statement.AssignSt (common_var.Symbolic ''var1'')( (expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2)))))]
   (expr.Binary binary_op.Less (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 5))))"
 (*
 definition test_statement6 :: "stmt" where 
@@ -332,15 +332,15 @@ definition test_statement6 :: "stmt" where
 Comb (Comb
   (Comb
     (stmt.AssignSt
-      (common_var.Symbolic ''var1'', expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2))))
+      (common_var.Symbolic ''var1'')( expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2))))
     Blank)
   (stmt.WhileSt (expr.Binary Less (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 4)))
     (Comb
       (stmt.AssignSt
-        (common_var.Symbolic ''var1'', expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2))))
+        (common_var.Symbolic ''var1'')( expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2))))
       Blank)))
   (stmt.AssignSt
-        (common_var.Symbolic ''var1'', expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2))))"
+        (common_var.Symbolic ''var1'')( expr.Binary binary_op.Sum (expr.SymbolicVar ''var1'') (expr.Const (const.Nat 2))))"
 
 
 
@@ -388,7 +388,5 @@ lemma "(statement_result.Continue,test_ms4)\<turnstile> test_statement6 \<longri
     apply (rule Const)
    apply (auto)
   done
-
-
 
 end

@@ -77,6 +77,210 @@ definition Elevator :: "model" where
                                 None)),
          (statement.AssignSt (common_var.Symbolic ''prev_in'', expr.SymbolicVar ''call0'')),
          (statement.AssignSt (common_var.Symbolic ''prev_out'', expr.SymbolicVar ''open0''))],
+        None)]),
+     (''Call1Latch'',
+      [(proc_var.Var (False,
+        (fmap_of_list
+          [(''prev_in'',var_init_decl.Simple (basic_post_type.Bool False,None)),
+           (''prev_out'',var_init_decl.Simple (basic_post_type.Bool False,None))])))],
+      [(''init'',
+        False,
+        [(statement.AssignSt (common_var.Symbolic ''prev_in'', expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''call1''))),
+         (statement.AssignSt (common_var.Symbolic ''prev_out'', expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''open1''))),
+         (statement.SetStateSt None)],
+        None),
+       (''check_ON_OFF'',
+        True,
+        [(statement.SelectSt (select_statement.IfSt
+                                [(expr.Binary (binary_op.And) (expr.SymbolicVar ''call1'') (expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''prev_in'')),
+                                  [(statement.AssignSt (common_var.Symbolic ''call1_LED'', expr.Const (const.Bool True)))])]
+                                None)),
+         (statement.SelectSt (select_statement.IfSt
+                                [(expr.Binary (binary_op.And) (expr.SymbolicVar ''open1'') (expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''prev_out'')),
+                                  [(statement.AssignSt (common_var.Symbolic ''call1_LED'', expr.Const (const.Bool False)))])]
+                                None)),
+         (statement.AssignSt (common_var.Symbolic ''prev_in'', expr.SymbolicVar ''call1'')),
+         (statement.AssignSt (common_var.Symbolic ''prev_out'', expr.SymbolicVar ''open1''))],
+        None)]),
+     (''Call2Latch'',
+      [(proc_var.Var (False,
+        (fmap_of_list
+          [(''prev_in'',var_init_decl.Simple (basic_post_type.Bool False,None)),
+           (''prev_out'',var_init_decl.Simple (basic_post_type.Bool False,None))])))],
+      [(''init'',
+        False,
+        [(statement.AssignSt (common_var.Symbolic ''prev_in'', expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''call2''))),
+         (statement.AssignSt (common_var.Symbolic ''prev_out'', expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''open2''))),
+         (statement.SetStateSt None)],
+        None),
+       (''check_ON_OFF'',
+        True,
+        [(statement.SelectSt (select_statement.IfSt
+                                [(expr.Binary (binary_op.And) (expr.SymbolicVar ''call2'') (expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''prev_in'')),
+                                  [(statement.AssignSt (common_var.Symbolic ''call2_LED'', expr.Const (const.Bool True)))])]
+                                None)),
+         (statement.SelectSt (select_statement.IfSt
+                                [(expr.Binary (binary_op.And) (expr.SymbolicVar ''open2'') (expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''prev_out'')),
+                                  [(statement.AssignSt (common_var.Symbolic ''call2_LED'', expr.Const (const.Bool False)))])]
+                                None)),
+         (statement.AssignSt (common_var.Symbolic ''prev_in'', expr.SymbolicVar ''call2'')),
+         (statement.AssignSt (common_var.Symbolic ''prev_out'', expr.SymbolicVar ''open2''))],
+        None)]),
+     (''Button0Latch'',
+      [(proc_var.Var (False,
+        (fmap_of_list
+          [(''prev_in'',var_init_decl.Simple (basic_post_type.Bool False,None)),
+           (''prev_out'',var_init_decl.Simple (basic_post_type.Bool False,None))])))],
+      [(''init'',
+        False,
+        [(statement.AssignSt (common_var.Symbolic ''prev_in'', expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''button0''))),
+         (statement.AssignSt (common_var.Symbolic ''prev_out'', expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''open0''))),
+         (statement.SetStateSt None)],
+        None),
+       (''check_ON_OFF'',
+        True,
+        [(statement.SelectSt (select_statement.IfSt
+                                [(expr.Binary (binary_op.And) (expr.SymbolicVar ''button0'') (expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''prev_in'')),
+                                  [(statement.AssignSt (common_var.Symbolic ''button0_LED'', expr.Const (const.Bool True)))])]
+                                None)),
+         (statement.SelectSt (select_statement.IfSt
+                                [(expr.Binary (binary_op.And) (expr.SymbolicVar ''open0'') (expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''prev_out'')),
+                                  [(statement.AssignSt (common_var.Symbolic ''button0_LED'', expr.Const (const.Bool False)))])]
+                                None)),
+         (statement.AssignSt (common_var.Symbolic ''prev_in'', expr.SymbolicVar ''button0'')),
+         (statement.AssignSt (common_var.Symbolic ''prev_out'', expr.SymbolicVar ''open0''))],
+        None)]),
+     (''Button1Latch'',
+      [(proc_var.Var (False,
+        (fmap_of_list
+          [(''prev_in'',var_init_decl.Simple (basic_post_type.Bool False,None)),
+           (''prev_out'',var_init_decl.Simple (basic_post_type.Bool False,None))])))],
+      [(''init'',
+        False,
+        [(statement.AssignSt (common_var.Symbolic ''prev_in'', expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''button1''))),
+         (statement.AssignSt (common_var.Symbolic ''prev_out'', expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''open1''))),
+         (statement.SetStateSt None)],
+        None),
+       (''check_ON_OFF'',
+        True,
+        [(statement.SelectSt (select_statement.IfSt
+                                [(expr.Binary (binary_op.And) (expr.SymbolicVar ''button1'') (expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''prev_in'')),
+                                  [(statement.AssignSt (common_var.Symbolic ''button1_LED'', expr.Const (const.Bool True)))])]
+                                None)),
+         (statement.SelectSt (select_statement.IfSt
+                                [(expr.Binary (binary_op.And) (expr.SymbolicVar ''open1'') (expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''prev_out'')),
+                                  [(statement.AssignSt (common_var.Symbolic ''button1_LED'', expr.Const (const.Bool False)))])]
+                                None)),
+         (statement.AssignSt (common_var.Symbolic ''prev_in'', expr.SymbolicVar ''button1'')),
+         (statement.AssignSt (common_var.Symbolic ''prev_out'', expr.SymbolicVar ''open1''))],
+        None)]),
+     (''Button2Latch'',
+      [(proc_var.Var (False,
+        (fmap_of_list
+          [(''prev_in'',var_init_decl.Simple (basic_post_type.Bool False,None)),
+           (''prev_out'',var_init_decl.Simple (basic_post_type.Bool False,None))])))],
+      [(''init'',
+        False,
+        [(statement.AssignSt (common_var.Symbolic ''prev_in'', expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''button2''))),
+         (statement.AssignSt (common_var.Symbolic ''prev_out'', expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''open2''))),
+         (statement.SetStateSt None)],
+        None),
+       (''check_ON_OFF'',
+        True,
+        [(statement.SelectSt (select_statement.IfSt
+                                [(expr.Binary (binary_op.And) (expr.SymbolicVar ''button2'') (expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''prev_in'')),
+                                  [(statement.AssignSt (common_var.Symbolic ''button2_LED'', expr.Const (const.Bool True)))])]
+                                None)),
+         (statement.SelectSt (select_statement.IfSt
+                                [(expr.Binary (binary_op.And) (expr.SymbolicVar ''open2'') (expr.Unary (Some unary_op.Not) (expr.SymbolicVar ''prev_out'')),
+                                  [(statement.AssignSt (common_var.Symbolic ''button2_LED'', expr.Const (const.Bool False)))])]
+                                None)),
+         (statement.AssignSt (common_var.Symbolic ''prev_in'', expr.SymbolicVar ''button2'')),
+         (statement.AssignSt (common_var.Symbolic ''prev_out'', expr.SymbolicVar ''open2''))],
+        None)]),
+     (''CheckCurFloor'',
+      [],
+      [(''check_floor'',
+        False,
+        [(statement.SelectSt (select_statement.IfSt 
+                                [(expr.SymbolicVar ''onfloor0'',
+                                  [(statement.AssignSt (common_var.Symbolic ''floor0_LED'', expr.Const (const.Bool True))),
+                                   (statement.AssignSt (common_var.Symbolic ''floor1_LED'', expr.Const (const.Bool False))),
+                                   (statement.AssignSt (common_var.Symbolic ''floor2_LED'', expr.Const (const.Bool False)))]),
+                                 (expr.SymbolicVar ''onfloor1'',
+                                  [(statement.AssignSt (common_var.Symbolic ''floor0_LED'', expr.Const (const.Bool False))),
+                                   (statement.AssignSt (common_var.Symbolic ''floor1_LED'', expr.Const (const.Bool True))),
+                                   (statement.AssignSt (common_var.Symbolic ''floor2_LED'', expr.Const (const.Bool False)))]),
+                                 (expr.SymbolicVar ''onfloor2'',
+                                  [(statement.AssignSt (common_var.Symbolic ''floor0_LED'', expr.Const (const.Bool False))),
+                                   (statement.AssignSt (common_var.Symbolic ''floor1_LED'', expr.Const (const.Bool False))),
+                                   (statement.AssignSt (common_var.Symbolic ''floor2_LED'', expr.Const (const.Bool True)))])]
+                                None))],
+        None)]),
+     (''UpControl'',
+      [],
+      [(''check_calls'',
+        False,
+        [statement.SelectSt (select_statement.IfSt
+                              [(expr.Binary (binary_op.Or)
+                                    (expr.Binary (binary_op.And)
+                                       (expr.Binary (binary_op.Eq) (expr.SymbolicVar ''cur'') (expr.Const (const.Int 0)))
+                                       (expr.Binary (binary_op.Or) (expr.SymbolicVar ''call0_LED'') (expr.SymbolicVar ''button0_LED'')))
+                                  (expr.Binary (binary_op.Or)
+                                     ((expr.Binary (binary_op.And)
+                                       (expr.Binary (binary_op.Eq) (expr.SymbolicVar ''cur'') (expr.Const (const.Int 1)))
+                                       (expr.Binary (binary_op.Or) (expr.SymbolicVar ''call1_LED'') (expr.SymbolicVar ''button1_LED''))))
+                                     ((expr.Binary (binary_op.And)
+                                       (expr.Binary (binary_op.Eq) (expr.SymbolicVar ''cur'') (expr.Const (const.Int 2)))
+                                       (expr.Binary (binary_op.Or) (expr.SymbolicVar ''call2_LED'') (expr.SymbolicVar ''button2_LED''))))),
+                                  [(statement.ProcessSt (process_statement.Start (Some ''DoorCycle''))),
+                                   (statement.SetStateSt (Some ''door_cycle''))])]
+                              (Some
+                                [(statement.SelectSt (select_statement.CaseSt
+                                    (expr.SymbolicVar ''cur'')
+                                    [([0],
+                                        [(statement.SelectSt (select_statement.IfSt
+                                            [(expr.Binary (binary_op.Or)
+                                                (expr.Binary (binary_op.Or)
+                                                  (expr.SymbolicVar ''call1_LED'')
+                                                  (expr.SymbolicVar ''button1_LED''))
+                                                ((expr.Binary (binary_op.Or)
+                                                  (expr.SymbolicVar ''call2_LED'')
+                                                  (expr.SymbolicVar ''button2_LED''))),
+                                              [(statement.ProcessSt (process_statement.Start (Some ''UpMotion''))),
+                                               (statement.SetStateSt None)])]
+                                            None))]),
+                                     ([1],
+                                        [(statement.SelectSt (select_statement.IfSt
+                                            [((expr.Binary (binary_op.Or)
+                                                  (expr.SymbolicVar ''call2_LED'')
+                                                  (expr.SymbolicVar ''button2_LED'')),
+                                               [(statement.ProcessSt (process_statement.Start (Some ''UpMotion''))),
+                                                (statement.SetStateSt None)]),
+                                             ((expr.Binary (binary_op.Or)
+                                                  (expr.SymbolicVar ''call0_LED'')
+                                                  (expr.SymbolicVar ''button0_LED'')),
+                                               [(statement.ProcessSt (process_statement.Start (Some ''DownControl''))),
+                                                (statement.ProcessSt (process_statement.Stop None))])]
+                                            None))]),
+                                     ([2],[(statement.ProcessSt (process_statement.Start (Some ''DownControl''))),
+                                           (statement.ProcessSt (process_statement.Stop None))])]
+                                    None))]))],
+        None),
+       (''check_stop'',
+        False,
+        [(statement.SelectSt (select_statement.IfSt
+            [((expr.ProcStatEpxr ''UpMotion'' proc_status.Inactive),
+              [(statement.ProcessSt (process_statement.Start (Some ''DoorCycle''))),
+               (statement.SetStateSt None)])]
+            None))],
+        None),
+       (''door_cycle'',
+        False,
+        [(statement.SelectSt (select_statement.IfSt
+            [((expr.ProcStatEpxr ''DoorCycle'' proc_status.Inactive),
+              [(statement.ProcessSt (process_statement.Start None))])]
+            None))],
         None)])])::program_decl],
   [],[])"
 

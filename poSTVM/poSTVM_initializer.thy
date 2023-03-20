@@ -163,7 +163,7 @@ definition extract_process_state :: "stacked_process \<Rightarrow> process_state
   (case sp of 
     (proc_name, var_list,stst_list) \<Rightarrow> 
     (let states = (map (\<lambda>(name,_,_,_). name) stst_list)
-      in (var_list, hd states, hd states, states, proc_status.Inactive, (time.Time 0 0 0 0 0))))"
+      in (var_list, hd states, hd states, states, (if (proc_name = ''Init'') then proc_status.Active else proc_status.Inactive), (time.Time 0 0 0 0 0))))"
 declare extract_process_state_def [simp]
 
 text "Extracting new program state from stacked program"

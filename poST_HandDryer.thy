@@ -9,7 +9,7 @@ definition HandDryer :: "model" where
   [(''HandDryer'',
     [(program_var.InVar (fmap_of_list [(''hands'',var_init_decl.Simple (basic_post_type.Bool False,None))])),
      (program_var.OutVar (fmap_of_list [(''control'',var_init_decl.Simple (basic_post_type.Bool False,None))]))],
-    [(''HandDryer'',
+    [(''Init'',
      [],
      [(''Wait'',
        False,
@@ -44,9 +44,86 @@ declare stacked_HandDaryer_model_def [simp]
 
 value "stacked_HandDaryer_model"
 
+definition model_time :: "time" where
+"model_time = time.Time 0 0 0 0 100"
+declare model_time_def [simp]
 
+lemma "(Suc 0)\<Zspot>model_time:stacked_HandDaryer_model\<turnstile>stacked_HandDryer\<mapsto>st"
+  apply (auto)
+  apply (rule ModelCons)
+  apply (rule ModelStep)
+   apply (rule ProgCons)
+    apply (rule ProgStep)
+      apply (auto)
+    apply (rule ProcCons)
+     apply (auto)
+     apply (rule ProcStep)
+        apply (auto)
+     apply (rule StateStep)
+      apply (rule Comb)
+       apply (rule If)
+        apply (auto)
+         apply (rule Var)
+         apply (auto)
+       apply (rule Blank)
+      apply (auto)
+      apply (rule Blank)
+     apply (auto)
+    apply (rule ProcNil)
+   apply (auto)
+   apply (rule ProgNil)
+done
 
+(*
+lemma "(Suc 1)\<Zspot>model_time:stacked_HandDaryer_model\<turnstile>stacked_HandDryer\<mapsto>st"
+  apply (auto)
+  apply (rule ModelCons)
+  apply (rule ModelStep)
+   apply (rule ProgCons)
+    apply (rule ProgStep)
+      apply (auto)
+    apply (rule ProcCons)
+     apply (auto)
+     apply (rule ProcStep)
+        apply (auto)
+     apply (rule StateStep)
+      apply (rule Comb)
+       apply (rule If)
+        apply (auto)
+         apply (rule Var)
+         apply (auto)
+       apply (rule Blank)
+      apply (auto)
+      apply (rule Blank)
+     apply (auto)
+    apply (rule ProcNil)
+   apply (auto)
+   apply (rule ProgNil)
 
-
-
+  apply (rule ModelCons)
+  apply (rule ModelStep)
+   apply (rule ProgCons)
+    apply (rule ProgStep)
+      apply (simp)
+    apply (rule ProcCons)
+     apply (auto)
+     apply (rule ProcStep)
+        apply (auto)
+     apply (rule StateStep)
+      apply (rule Comb)
+       apply (rule If)
+         apply (rule Var)
+           apply (auto)
+           apply (rule Comb)
+            apply (rule Reset)
+           apply (auto)
+           apply (rule Blank)
+          apply (auto)
+          apply (rule Blank)
+         apply (rule Blank)
+        apply (auto)
+  apply (rule Comb)
+  apply (rule ProcCons)       
+  done
+*)
 end

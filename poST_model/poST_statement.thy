@@ -15,7 +15,7 @@ type_synonym set_state_statement = "state_name option"
 
 type_synonym for_list = "expr * expr * (expr option)"
 type_synonym case_list = "nat list"
-    datatype statement = AssignSt assign_statement |
+    datatype statement = AssignSt common_var expr |
                          FBInvocation fb_invocation |
                          Return |
                          Exit |

@@ -29,7 +29,7 @@ declare stack_expr.simps [simp]
 declare stack_expr.elims [elim]
 
 datatype stmt = 
-  AssignSt assign_statement |
+  AssignSt common_var expr |
   FBInvocation fb_invocation |
   Return |
   Exit |
@@ -58,7 +58,7 @@ function (sequential) statement_to_stmt :: "statement \<Rightarrow> stmt" and
         st_list_to_stmt :: "statement list \<Rightarrow> stmt" and
         if_to_stmt :: "(expr * statement_list) list \<Rightarrow> statement_list option \<Rightarrow> stmt" and
         case_to_stmt :: "expr \<Rightarrow> (case_list *(statement list)) list \<Rightarrow> statement_list option \<Rightarrow> stmt"where
-  "statement_to_stmt (statement.AssignSt st) = stmt.AssignSt st"
+  "statement_to_stmt (statement.AssignSt cv exp) = stmt.AssignSt cv exp"
 | "statement_to_stmt (statement.FBInvocation fb) = stmt.FBInvocation fb"
 | "statement_to_stmt (statement.Return) = stmt.Return"
 | "statement_to_stmt (statement.Exit) = stmt.Exit"
@@ -101,14 +101,14 @@ function (sequential) statement_to_stmt :: "statement \<Rightarrow> stmt" and
                             (start,end,step_option) 
                             st_list)) =
     stmt.Comb 
-      (stmt.AssignSt (common_var.Symbolic var_name,start))
+      (stmt.AssignSt (common_var.Symbolic var_name) start)
       (let cond = expr.Binary 
                     binary_op.Less 
                     (expr.SymbolicVar var_name) end;
            body = (st_list_to_stmt st_list);
            step_st = stmt.AssignSt 
-                      (common_var.Symbolic var_name, 
-                        expr.Binary binary_op.Sum
+                      (common_var.Symbolic var_name) 
+                        (expr.Binary binary_op.Sum
                           (expr.SymbolicVar var_name) 
                           (case step_option of
                             None \<Rightarrow> expr.Const (const.Nat 1)

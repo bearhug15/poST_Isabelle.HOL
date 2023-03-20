@@ -733,4 +733,7 @@ definition get_func_by_name :: "model_state \<Rightarrow> func_name \<Rightarrow
   (case st of (ST _ _ _ _ f_map) \<Rightarrow> the (fmlookup f_map name))"
 declare get_func_by_name_def [simp] 
 
+declare fmupd_reorder_neq [simp]
+(*declare fmran_def [simp]
+declare ffold_def [simp]*)
 end

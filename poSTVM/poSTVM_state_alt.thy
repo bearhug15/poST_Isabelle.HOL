@@ -25,8 +25,8 @@ datatype model_state = ST
                        stacked_global_vars  
                        "(program_name,program_state) fmap" 
                        program_name 
-                       "(function_block_decl list)"  
-                       "stacked_funcs"
+                       stacked_func_blocks  
+                       stacked_funcs
 
 datatype var_level = Global | Program | Process
 

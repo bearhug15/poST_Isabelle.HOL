@@ -7,8 +7,8 @@ definition HandDryer :: "model" where
 "HandDryer = 
   (None,[],
   [(''HandDryer'',
-    [(program_var.InVar (fmap_of_list [(''hands'',var_init_decl.Simple (basic_post_type.Bool False,None))])),
-     (program_var.OutVar (fmap_of_list [(''control'',var_init_decl.Simple (basic_post_type.Bool False,None))]))],
+    [(program_var.InVar ( [(''hands'',var_init_decl.Simple (basic_post_type.Bool False,None))])),
+     (program_var.OutVar ( [(''control'',var_init_decl.Simple (basic_post_type.Bool False,None))]))],
     [(''Init'',
      [],
      [(''Wait'',

@@ -30,7 +30,7 @@ declare stack_expr.elims [elim]
 
 datatype stmt = 
   AssignSt common_var expr |
-  FBInvocation fb_invocation |
+  FBInvocation func_block_name  "(param_assign list)" |
   Return |
   Exit |
   ProcessSt process_statement |
@@ -59,7 +59,7 @@ function (sequential) statement_to_stmt :: "statement \<Rightarrow> stmt" and
         if_to_stmt :: "(expr * statement_list) list \<Rightarrow> statement_list option \<Rightarrow> stmt" and
         case_to_stmt :: "expr \<Rightarrow> (case_list *(statement list)) list \<Rightarrow> statement_list option \<Rightarrow> stmt"where
   "statement_to_stmt (statement.AssignSt cv exp) = stmt.AssignSt cv exp"
-| "statement_to_stmt (statement.FBInvocation fb) = stmt.FBInvocation fb"
+| "statement_to_stmt (statement.FBInvocation fb1 fb2) = stmt.FBInvocation fb1 fb2"
 | "statement_to_stmt (statement.Return) = stmt.Return"
 | "statement_to_stmt (statement.Exit) = stmt.Exit"
 | "statement_to_stmt (statement.ProcessSt st) = stmt.ProcessSt st"
@@ -176,11 +176,11 @@ text "Converting variable initialization to stacked version"
 definition stack_var_init_decl :: "var_init_decl \<Rightarrow> stacked_var_init" where
 "stack_var_init_decl decl =
   (case decl of 
-    (var_init_decl.Simple (value,exp_option)) \<Rightarrow> 
+    (var_init_decl.Symbolic value exp_option) \<Rightarrow> 
       (stacked_var_init.Symbolic 
         value 
         (case exp_option of (Some exp) \<Rightarrow> (Some (stack_expr exp))| None \<Rightarrow> None)) |
-    (var_init_decl.Array ((ar_inter,values),array_init_option)) \<Rightarrow> 
+    (var_init_decl.Array ar_inter values array_init_option) \<Rightarrow> 
       (stacked_var_init.Array 
         (ainter_to_sainter ar_inter) 
         values 
@@ -200,11 +200,11 @@ text "Converting process var to stacked version"
 definition stack_proc_var :: "proc_var \<Rightarrow> stacked_proc_vars" where
 "stack_proc_var var = 
   (case var of
-    (proc_var.Var (is_const, vars)) \<Rightarrow> (fmmap_keys (\<lambda>name val. stacked_proc_var.Var (stack_var_init_decl val)) vars)
+    (proc_var.Var (is_const, vars)) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_proc_var.Var (stack_var_init_decl val)))vars))
   | (proc_var.ProcessVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(vals,name). (name,stacked_proc_var.ProcessVar vals)) vars))
-  | (proc_var.InOutVar vars) \<Rightarrow> (fmmap_keys (\<lambda>name val. stacked_proc_var.InOutVar (stack_var_init_decl val)) vars) 
-  | (proc_var.InVar vars) \<Rightarrow> (fmmap_keys (\<lambda>name val. (stacked_proc_var.InVar (stack_var_init_decl val))) vars)
-  | (proc_var.OutVar vars) \<Rightarrow> (fmmap_keys (\<lambda>name val. (stacked_proc_var.OutVar (stack_var_init_decl val))) vars))"
+  | (proc_var.InOutVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_proc_var.InOutVar (stack_var_init_decl val)))vars)) 
+  | (proc_var.InVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_proc_var.InVar (stack_var_init_decl val)))vars))
+  | (proc_var.OutVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_proc_var.OutVar (stack_var_init_decl val)))vars)))"
 declare stack_proc_var_def [simp]
 
 text "Converting process vars list to stacked version"
@@ -235,11 +235,11 @@ text "Converting program vars to stacked version"
 definition stack_prog_var :: "program_var \<Rightarrow> stacked_prog_vars" where
 "stack_prog_var var = 
   (case var of
-    (program_var.Var (is_const, vars)) \<Rightarrow> (fmmap_keys (\<lambda>name val. stacked_prog_var.Var (stack_var_init_decl val)) vars)
-  | (program_var.ExtVar (is_const, vars)) \<Rightarrow> (fmmap_keys (\<lambda>name val. stacked_prog_var.ExtVar (stacked_var_init.Symbolic val None)) vars)
-  | (program_var.InOutVar vars) \<Rightarrow> (fmmap_keys (\<lambda>name val. stacked_prog_var.InOutVar (stack_var_init_decl val)) vars) 
-  | (program_var.InVar vars) \<Rightarrow> (fmmap_keys (\<lambda>name val. stacked_prog_var.InVar (stack_var_init_decl val)) vars)
-  | (program_var.OutVar vars) \<Rightarrow> (fmmap_keys (\<lambda>name val. stacked_prog_var.OutVar (stack_var_init_decl val)) vars))"
+    (program_var.Var (is_const, vars)) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_prog_var.Var (stack_var_init_decl val)))vars))
+  | (program_var.ExtVar (is_const, vars)) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_prog_var.ExtVar (stacked_var_init.Symbolic val None)))vars))
+  | (program_var.InOutVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_prog_var.InOutVar (stack_var_init_decl val)))vars)) 
+  | (program_var.InVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_prog_var.InVar (stack_var_init_decl val)))vars))
+  | (program_var.OutVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_prog_var.OutVar (stack_var_init_decl val)))vars)))"
 declare stack_prog_var_def [simp]
 
 text "Converting program vars list to stacked version"
@@ -325,10 +325,10 @@ text "Converting program vars to stacked version"
 definition stack_func_var :: "func_var \<Rightarrow> stacked_func_vars" where
 "stack_func_var var = 
   (case var of
-    (func_var.Var (is_const, vars)) \<Rightarrow> (fmmap_keys (\<lambda>name val. stacked_func_var.Var (stack_var_init_decl val)) vars)
-  | (func_var.InOutVar vars) \<Rightarrow> (fmmap_keys (\<lambda>name val. stacked_func_var.InOutVar (stack_var_init_decl val)) vars) 
-  | (func_var.InVar vars) \<Rightarrow> (fmmap_keys (\<lambda>name val. stacked_func_var.InVar (stack_var_init_decl val)) vars)
-  | (func_var.OutVar vars) \<Rightarrow> (fmmap_keys (\<lambda>name val. stacked_func_var.OutVar (stack_var_init_decl val)) vars))"
+    (func_var.Var (is_const, vars)) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_func_var.Var (stack_var_init_decl val)))vars))
+  | (func_var.InOutVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_func_var.InOutVar (stack_var_init_decl val)))vars)) 
+  | (func_var.InVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_func_var.InVar (stack_var_init_decl val)))vars))
+  | (func_var.OutVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_func_var.OutVar (stack_var_init_decl val)))vars)))"
 declare stack_func_var_def [simp]
 
 text "Converting program vars list to stacked version"
@@ -337,6 +337,8 @@ definition stack_func_vars :: "func_var list \<Rightarrow> stacked_func_vars" wh
 declare stack_func_vars_def [simp]
 
 type_synonym stacked_func_block = "func_block_name * stacked_func_block_var list * stacked_process list"
+(*TO DO*)
+type_synonym stacked_func_blocks = "function_block_decl list"
 
 type_synonym stacked_func = "func_name * basic_post_type * stacked_func_vars * stmt"
 type_synonym stacked_funcs = "(func_name,stacked_func) fmap"
@@ -363,9 +365,10 @@ text "Stack global var"
 definition stack_global_var :: "global_var_decl \<Rightarrow> stacked_global_vars" where
 "stack_global_var var = 
   (case var of
-    (_,vars) \<Rightarrow> (fmmap (\<lambda>var. (case var of
-                                all_var_init_decl.Var val \<Rightarrow> stacked_global_var.Var (stack_var_init_decl val)
-                              | all_var_init_decl.GlobalVar (val1,val2) \<Rightarrow> stacked_global_var.Global val1 val2) ) vars))"
+    (_,vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). 
+                  (name,(case val of 
+                          all_var_init_decl.Var val \<Rightarrow> stacked_global_var.Var (stack_var_init_decl val)
+                        | all_var_init_decl.GlobalVar (val1,val2) \<Rightarrow> stacked_global_var.Global val1 val2)))vars)))"
 declare stack_global_var_def [simp]
 
 text "Stack list of global vars"
@@ -374,7 +377,7 @@ definition stack_global_vars :: "global_var_decl list \<Rightarrow> stacked_glob
 declare stack_global_vars_def [simp]
 
 (*TO DO stacking configuration, function blocks *)
-type_synonym stacked_model = "(configuration_decl option) * stacked_global_vars * (stacked_program list) * (function_block_decl list) * stacked_funcs"
+type_synonym stacked_model = "(configuration_decl option) * stacked_global_vars * (stacked_program list) * stacked_func_blocks * stacked_funcs"
 
 text "Converting model declaration to stacked version"
 definition stack_model :: "model \<Rightarrow> stacked_model" where

@@ -7,7 +7,7 @@ definition Elevator :: "model" where
   (None,[],
   [(''Controller'',
     [(program_var.InVar 
-      (fmap_of_list 
+      ( 
         [(''onfloor0'',var_init_decl.Simple (basic_post_type.Bool False,None)),
          (''onfloor1'',var_init_decl.Simple (basic_post_type.Bool False,None)),
          (''onfloor2'',var_init_decl.Simple (basic_post_type.Bool False,None)),
@@ -21,7 +21,7 @@ definition Elevator :: "model" where
          (''door1closed'',var_init_decl.Simple (basic_post_type.Bool False,None)),
          (''door2closed'',var_init_decl.Simple (basic_post_type.Bool False,None))])),
      (program_var.OutVar 
-      (fmap_of_list 
+      ( 
         [(''up'',var_init_decl.Simple (basic_post_type.Bool False,None)),
          (''down'',var_init_decl.Simple (basic_post_type.Bool False,None)),
          (''open0'',var_init_decl.Simple (basic_post_type.Bool False,None)),
@@ -38,7 +38,7 @@ definition Elevator :: "model" where
          (''floor2_LED'',var_init_decl.Simple (basic_post_type.Bool False,None)),
          (''cur'',var_init_decl.Simple (basic_post_type.Int 0,None))])),
      (program_var.Var (False, 
-      (fmap_of_list 
+      ( 
         [(''target'',var_init_decl.Simple (basic_post_type.Int 0,None))])))],
     [(''Init'',
       [],
@@ -56,7 +56,7 @@ definition Elevator :: "model" where
         None)::state_decl])::process_decl,
      (''Call0Latch'',
       [(proc_var.Var (False,
-        (fmap_of_list
+        (
           [(''prev_in'',var_init_decl.Simple (basic_post_type.Bool False,None)),
            (''prev_out'',var_init_decl.Simple (basic_post_type.Bool False,None))])))],
       [(''init'',
@@ -80,7 +80,7 @@ definition Elevator :: "model" where
         None)]),
      (''Call1Latch'',
       [(proc_var.Var (False,
-        (fmap_of_list
+        (
           [(''prev_in'',var_init_decl.Simple (basic_post_type.Bool False,None)),
            (''prev_out'',var_init_decl.Simple (basic_post_type.Bool False,None))])))],
       [(''init'',
@@ -104,7 +104,7 @@ definition Elevator :: "model" where
         None)]),
      (''Call2Latch'',
       [(proc_var.Var (False,
-        (fmap_of_list
+        (
           [(''prev_in'',var_init_decl.Simple (basic_post_type.Bool False,None)),
            (''prev_out'',var_init_decl.Simple (basic_post_type.Bool False,None))])))],
       [(''init'',
@@ -128,7 +128,7 @@ definition Elevator :: "model" where
         None)]),
      (''Button0Latch'',
       [(proc_var.Var (False,
-        (fmap_of_list
+        (
           [(''prev_in'',var_init_decl.Simple (basic_post_type.Bool False,None)),
            (''prev_out'',var_init_decl.Simple (basic_post_type.Bool False,None))])))],
       [(''init'',
@@ -152,7 +152,7 @@ definition Elevator :: "model" where
         None)]),
      (''Button1Latch'',
       [(proc_var.Var (False,
-        (fmap_of_list
+        (
           [(''prev_in'',var_init_decl.Simple (basic_post_type.Bool False,None)),
            (''prev_out'',var_init_decl.Simple (basic_post_type.Bool False,None))])))],
       [(''init'',
@@ -176,7 +176,7 @@ definition Elevator :: "model" where
         None)]),
      (''Button2Latch'',
       [(proc_var.Var (False,
-        (fmap_of_list
+        (
           [(''prev_in'',var_init_decl.Simple (basic_post_type.Bool False,None)),
            (''prev_out'',var_init_decl.Simple (basic_post_type.Bool False,None))])))],
       [(''init'',

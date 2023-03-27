@@ -68,6 +68,7 @@ function (sequential) statement_to_stmt :: "statement \<Rightarrow> stmt" and
 | "statement_to_stmt (statement.SelectSt (select_statement.IfSt branches else_option)) =(if_to_stmt branches else_option)"
 | "statement_to_stmt (statement.SelectSt (select_statement.CaseSt exp cases_list else_option)) =(case_to_stmt exp cases_list else_option)"
 | "st_list_to_stmt [] = stmt.Blank"
+| "st_list_to_stmt (st#[]) = (statement_to_stmt st)"
 | "st_list_to_stmt (st#other) = 
     stmt.Comb (statement_to_stmt st) (st_list_to_stmt other)"
 | "if_to_stmt [] else_option= 

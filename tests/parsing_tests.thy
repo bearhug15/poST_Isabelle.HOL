@@ -109,11 +109,8 @@ definition stmt1 :: "stmt" where
                         binary_op.Eq
                         (expr.Const (const.Nat 0))
                         (expr.Const (const.Nat 1)))
-                      (stmt.Comb 
                         (stmt.Return)
-                        (stmt.Blank))
                       (stmt.Blank))
-                    (stmt.Comb
                       (stmt.Comb
                         (stmt.AssignSt
                           (common_var.Symbolic ''i'')
@@ -131,7 +128,7 @@ definition stmt1 :: "stmt" where
                                 binary_op.Sum
                                 (expr.SymbolicVar ''i'')
                                 (expr.Const (const.Nat 1)))))))
-                      (stmt.Blank)))))))))))"
+                      )))))))))"
 
 definition check_statement_parse :: "statement list \<Rightarrow> stmt \<Rightarrow> bool" where
 "check_statement_parse st stm = ((st_list_to_stmt st) = stm)"

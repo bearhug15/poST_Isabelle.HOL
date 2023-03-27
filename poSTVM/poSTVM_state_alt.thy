@@ -70,6 +70,7 @@ declare get_cur_procst_from_progst_def [simp]
 definition get_procst_from_progst_by_name :: "program_state \<Rightarrow> process_name \<Rightarrow> process_state" where
 "get_procst_from_progst_by_name pg pc_name = 
   (let (_,pc_map,_) = pg in (case (fmlookup pc_map pc_name) of Some st \<Rightarrow> st))"
+declare get_procst_from_progst_by_name_def [simp]
 
 text "Getting process vars list in current process from program state"
 definition get_cur_proc_vars_from_progst :: "program_state \<Rightarrow>stacked_proc_vars" where 

@@ -10,25 +10,31 @@ definition nat_to_time :: "nat \<Rightarrow> time" where
        hours = (var div 1000 div 60 div 60 mod 24);
        days = (var div 1000 div 60 div 60 div 24) in
        Time days hours minutes seconds miliseconds)"
+declare nat_to_time_def [simp]
 
 definition int_to_time :: "int \<Rightarrow> time" where
 "int_to_time var1 = (let var = (nat var1) in nat_to_time var)"
-
+declare int_to_time_def [simp]
 
 definition real_to_time :: "real \<Rightarrow> time" where
 "real_to_time var = (let var = (nat \<lfloor>var\<rfloor>) in nat_to_time var)"
+declare real_to_time_def [simp]
 
 definition bool_to_time :: "bool \<Rightarrow> time" where 
 "bool_to_time var = (if var then Time 0 0 0 0 1 else Time 0 0 0 0 0) "
+declare bool_to_time_def [simp]
 
-fun time_sum :: "time \<Rightarrow> time \<Rightarrow> time" where
-"time_sum (Time v1d v1h v1m v1s v1ms) (Time v2d v2h v2m v2s v2ms) = 
-  (let miliseconds = (v1ms + v2ms) mod 1000;
+definition time_sum :: "time \<Rightarrow> time \<Rightarrow> time" where
+"time_sum t1 t2 = 
+  (case (t1,t2) of 
+    ((Time v1d v1h v1m v1s v1ms),(Time v2d v2h v2m v2s v2ms)) \<Rightarrow>
+    (let miliseconds = (v1ms + v2ms) mod 1000;
       seconds = (v1s + v2s + (v1ms + v2ms) div 1000) mod 60 ;
       minutes = (v1m + v2m + (v1s + v2s) div 60) mod 60;
       hours = (v1h + v2h + (v1m + v2m) div 60) mod 24;
       days = v1d + v2d + (v1h + v2h) div 60
-      in Time days hours minutes seconds miliseconds)"
+      in Time days hours minutes seconds miliseconds))"
+declare time_sum_def [simp]
 (*
 fun time_sub :: "time \<Rightarrow> time \<Rightarrow> time" where
 "time_sub (Time v1d v1h v1m v1s v1ms) (Time v2d v2h v2m v2s v2ms) = 
@@ -50,39 +56,61 @@ fun time_sub :: "time \<Rightarrow> time \<Rightarrow> time" where
           else Time (nat resd) (nat resh) (nat resm) (nat ress) (nat resms)))"
 *)
 
-fun time_eq :: "time \<Rightarrow> time \<Rightarrow>bool" where
-"time_eq (Time v10 v11 v12 v13 v14) (Time v20 v21 v22 v23 v24) = ((v14 = v24) \<and> (v13 = v23) \<and> (v12 = v22) \<and> (v11 = v21) \<and> (v10 = v20))"
-fun time_noteq :: "time \<Rightarrow> time \<Rightarrow>bool" where
-"time_noteq (Time v10 v11 v12 v13 v14) (Time v20 v21 v22 v23 v24) = ((v14 \<noteq> v24) \<or> (v13 \<noteq> v23) \<or> (v12 \<noteq> v22) \<or> (v11 \<noteq> v21) \<or> (v10 \<noteq> v20))"
+definition time_eq :: "time \<Rightarrow> time \<Rightarrow>bool" where
+"time_eq t1 t2 = 
+  (case (t1,t2) of 
+    ((Time v14 v13 v12 v11 v10),(Time v24 v23 v22 v21 v20)) \<Rightarrow>
+    ((v14 = v24) \<and> (v13 = v23) \<and> (v12 = v22) \<and> (v11 = v21) \<and> (v10 = v20)))"
+declare time_eq_def [simp]
 
-fun time_less :: "time \<Rightarrow> time \<Rightarrow>bool" where
-"time_less (Time v10 v11 v12 v13 v14) (Time v20 v21 v22 v23 v24) =
+definition time_noteq :: "time \<Rightarrow> time \<Rightarrow>bool" where
+"time_noteq t1 t2 = 
+  (case (t1,t2) of 
+    ((Time v14 v13 v12 v11 v10),(Time v24 v23 v22 v21 v20)) \<Rightarrow>
+    ((v14 \<noteq> v24) \<or> (v13 \<noteq> v23) \<or> (v12 \<noteq> v22) \<or> (v11 \<noteq> v21) \<or> (v10 \<noteq> v20)))"
+declare time_noteq_def [simp]
+
+definition time_less :: "time \<Rightarrow> time \<Rightarrow>bool" where
+"time_less t1 t2 =
+(case (t1,t2) of 
+    ((Time v14 v13 v12 v11 v10),(Time v24 v23 v22 v21 v20)) \<Rightarrow>
   ((v10 < v20) \<or>
   ((v10 = v20) \<and> ((v11 < v21) \<or> 
                   (v11 = v21) \<and> ((v12 < v22) \<or> 
                                  (v12 = v22) \<and> ((v13 < v23) \<or>
-                                                (v13 = v23) \<and> (v14 < v24))))))"
+                                                (v13 = v23) \<and> (v14 < v24)))))))"
+declare time_less_def [simp]
 
-fun time_more :: "time \<Rightarrow> time \<Rightarrow>bool" where
-"time_more (Time v10 v11 v12 v13 v14) (Time v20 v21 v22 v23 v24) =
+definition time_more :: "time \<Rightarrow> time \<Rightarrow>bool" where
+"time_more t1 t2 =
+(case (t1,t2) of 
+    ((Time v14 v13 v12 v11 v10),(Time v24 v23 v22 v21 v20)) \<Rightarrow>
   ((v10 > v20) \<or>
   ((v10 = v20) \<and> ((v11 > v21) \<or> 
                   (v11 = v21) \<and> ((v12 > v22) \<or> 
                                  (v12 = v22) \<and> ((v13 > v23) \<or>
-                                                (v13 = v23) \<and> (v14 > v24))))))"
-fun time_eqless :: "time \<Rightarrow> time \<Rightarrow>bool" where
-"time_eqless (Time v10 v11 v12 v13 v14) (Time v20 v21 v22 v23 v24) = 
+                                                (v13 = v23) \<and> (v14 > v24)))))))"
+declare time_more_def [simp]
+
+definition time_eqless :: "time \<Rightarrow> time \<Rightarrow>bool" where
+"time_eqless t1 t2 =
+(case (t1,t2) of 
+    ((Time v14 v13 v12 v11 v10),(Time v24 v23 v22 v21 v20)) \<Rightarrow> 
  ((v10 \<le> v20) \<or>
   ((v10 = v20) \<and> ((v11 \<le> v21) \<or> 
                   (v11 = v21) \<and> ((v12 \<le> v22) \<or> 
                                  (v12 = v22) \<and> ((v13 \<le> v23) \<or>
-                                                (v13 = v23) \<and> (v14 \<le> v24))))))"
-fun time_eqmore :: "time \<Rightarrow> time \<Rightarrow>bool" where
-"time_eqmore (Time v10 v11 v12 v13 v14) (Time v20 v21 v22 v23 v24) = 
+                                                (v13 = v23) \<and> (v14 \<le> v24)))))))"
+declare time_eqless_def [simp]
+
+definition time_eqmore :: "time \<Rightarrow> time \<Rightarrow>bool" where
+"time_eqmore t1 t2 = 
+(case (t1,t2) of 
+    ((Time v14 v13 v12 v11 v10),(Time v24 v23 v22 v21 v20)) \<Rightarrow>
  ((v10 \<ge> v20) \<or>
   ((v10 = v20) \<and> ((v11 \<ge> v21) \<or> 
                   (v11 = v21) \<and> ((v12 \<ge> v22) \<or> 
                                  (v12 = v22) \<and> ((v13 \<ge> v23) \<or>
-                                                (v13 = v23) \<and> (v14 \<ge> v24))))))"
-
+                                                (v13 = v23) \<and> (v14 \<ge> v24)))))))"
+declare time_eqmore_def [simp]
 end

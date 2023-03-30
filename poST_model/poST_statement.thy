@@ -4,7 +4,6 @@ begin
 
 datatype common_var = Symbolic symbolic_var | Array symbolic_var expr
 type_synonym assign_statement = "common_var * expr"
-type_synonym fb_invocation = "func_block_name * (param_assign list)"
 type_synonym start_process_statement = "process_name option"
 type_synonym stop_process_statement =  "process_name option"
 type_synonym error_process_statement = "process_name option"
@@ -16,7 +15,7 @@ type_synonym set_state_statement = "state_name option"
 type_synonym for_list = "expr * expr * (expr option)"
 type_synonym case_list = "nat list"
     datatype statement = AssignSt common_var expr |
-                         FBInvocation fb_invocation |
+                         FBInvocation func_block_name  "(param_assign list)" |
                          Return |
                          Exit |
                          ProcessSt process_statement |
@@ -40,7 +39,6 @@ primrec add_statement :: "statement_list \<Rightarrow> statement \<Rightarrow> s
 "add_statement (statement_list.StList st_list) st =(statement_list.StList (st_list @ [st]))" 
 *)
 translations
-  (type) "fb_invocation" <= (type) "func_block_name * (param_assign list)"
   (type) "for_list" <= (type) "expr * expr * (expr option)"
 
 end

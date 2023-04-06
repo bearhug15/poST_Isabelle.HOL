@@ -63,9 +63,7 @@ inductive
               val = binary_op_exec bin_op val1 val2 \<rbrakk> \<Longrightarrow>
              st\<turnstile>expr.Binary bin_op exp1 exp2\<rightarrow>val"
   | UnOp : "\<lbrakk>st\<turnstile>pexp\<rightarrow>val1;
-                val = (case un_op of
-                        None \<Rightarrow> val1
-                      | Some un_op \<Rightarrow> unary_op_exec un_op val1)\<rbrakk> \<Longrightarrow>
+                val = (unary_op_exec un_op val1)\<rbrakk> \<Longrightarrow>
                st\<turnstile> expr.Unary un_op pexp\<rightarrow>val"
   | Const : "\<lbrakk>val = const_to_basic c\<rbrakk>\<Longrightarrow>
             st\<turnstile>expr.Const c\<rightarrow>val"

@@ -6,7 +6,7 @@ theory poSTVM_parser_alt
 begin
 
 datatype expr_op =
-  Unary "unary_op option" | 
+  Unary unary_op | 
   Binary binary_op | 
   Value basic_post_type | 
   Get symbolic_var |
@@ -18,7 +18,7 @@ type_synonym expr_stack = "expr_op list"
 
 text "transforms expr into stack form"
 fun stack_expr :: "expr \<Rightarrow> expr_stack" where
-  "stack_expr (expr.Unary unary_option exp) = (expr_op.Unary unary_option)# (stack_expr exp)"
+  "stack_expr (expr.Unary unary_op exp) = (expr_op.Unary unary_op)# (stack_expr exp)"
 | "stack_expr (expr.Binary bin_op exp1 exp2) = ((expr_op.Binary bin_op) # (stack_expr exp1)) @ (stack_expr exp2)"
 | "stack_expr (expr.Const c) = [expr_op.Value (const_to_basic c)]" 
 | "stack_expr (expr.SymbolicVar var_name) = [expr_op.Get var_name ]" 

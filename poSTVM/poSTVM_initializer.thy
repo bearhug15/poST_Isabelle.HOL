@@ -5,10 +5,9 @@ begin
 fun exec_sev_expr :: "nat \<Rightarrow> expr_stack \<Rightarrow> model_state \<Rightarrow> (basic_post_type option) list" where
   "exec_sev_expr 0 _ st = [None]"
 | "exec_sev_expr (Suc n) [] st = [None]"
-| "exec_sev_expr (Suc n) ((expr_op.Unary unary_op_option)#other) st = 
-  (case (unary_op_option,(exec_sev_expr (Suc n) other st)) of
-    (None,(first#rest)) \<Rightarrow> (first#rest) 
-  | (Some un_op,(first#rest)) \<Rightarrow> ((Some (unary_op_exec un_op (the first)))# rest))"
+| "exec_sev_expr (Suc n) ((expr_op.Unary un_op)#other) st = 
+  (case (exec_sev_expr (Suc n) other st) of
+    (first#rest) \<Rightarrow> ((Some (unary_op_exec un_op (the first)))# rest))"
 | "exec_sev_expr (Suc n) ((expr_op.Binary bin_op)#other) st =
   (case (exec_sev_expr (Suc (Suc n)) other st) 
     of (first#second#rest) \<Rightarrow> (Some (binary_op_exec bin_op (the first) (the second)))#rest)"

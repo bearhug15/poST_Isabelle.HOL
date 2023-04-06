@@ -10,12 +10,12 @@ Error
 datatype unary_op = Not | Minus
 datatype binary_op =
 And | Eq | NotEq | Less | More | LessEq | MoreEq | 
-Sum | Sub | Mul | Div | Mod | Or | Xor
+Sum | Sub | Mul | Div | Mod | Or | Xor | Pow
 
 datatype assign_type = ColonEq | Conseq
 
 datatype expr = 
-Unary "unary_op option"  expr |
+Unary unary_op expr |
 Binary binary_op expr expr |
 Const const | 
 SymbolicVar symbolic_var | 

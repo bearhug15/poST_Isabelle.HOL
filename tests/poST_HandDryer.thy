@@ -56,6 +56,7 @@ definition remove_hands :: "model_state \<Rightarrow> model_state" where
 "remove_hands st = set_symbvar st ''hands'' (basic_post_type.Bool False)"
 declare remove_hands_def [simp]
 
+
 schematic_goal "model_time:stacked_HandDaryer_model\<turnstile>stacked_HandDryer\<mapsto>?st"
   apply (auto)
   apply (rule ModelStep)
@@ -151,56 +152,5 @@ schematic_goal "model_time:(set_work_state (set_overtime (set_control stacked_Ha
    apply (rule ProcNil) apply (auto)
   apply (rule ProgNil)
   done
-(*
-lemma "(Suc 1)\<Zspot>model_time:stacked_HandDaryer_model\<turnstile>stacked_HandDryer\<mapsto>st"
-  apply (auto)
-  apply (rule ModelCons)
-  apply (rule ModelStep)
-   apply (rule ProgCons)
-    apply (rule ProgStep)
-      apply (auto)
-    apply (rule ProcCons)
-     apply (auto)
-     apply (rule ProcStep)
-        apply (auto)
-     apply (rule StateStep)
-      apply (rule Comb)
-       apply (rule If)
-        apply (auto)
-         apply (rule Var)
-         apply (auto)
-       apply (rule Blank)
-      apply (auto)
-      apply (rule Blank)
-     apply (auto)
-    apply (rule ProcNil)
-   apply (auto)
-   apply (rule ProgNil)
 
-  apply (rule ModelCons)
-  apply (rule ModelStep)
-   apply (rule ProgCons)
-    apply (rule ProgStep)
-      apply (simp)
-    apply (rule ProcCons)
-     apply (auto)
-     apply (rule ProcStep)
-        apply (auto)
-     apply (rule StateStep)
-      apply (rule Comb)
-       apply (rule If)
-         apply (rule Var)
-           apply (auto)
-           apply (rule Comb)
-            apply (rule Reset)
-           apply (auto)
-           apply (rule Blank)
-          apply (auto)
-          apply (rule Blank)
-         apply (rule Blank)
-        apply (auto)
-  apply (rule Comb)
-  apply (rule ProcCons)       
-  done
-*)
 end

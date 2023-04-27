@@ -33,7 +33,7 @@ datatype stmt =
   FBInvocation func_block_name  "(param_assign list)" |
   Return |
   Exit |
-  ProcessSt process_statement |
+  ProcessSt process_contextment |
   SetStateSt set_state_statement |
   ResetSt |
   IfSt expr stmt stmt |
@@ -233,18 +233,18 @@ definition extr_stacked_prog_var_init :: "stacked_prog_var \<Rightarrow> stacked
 declare extr_stacked_prog_var_init_def [simp]
 
 text "Converting program vars to stacked version"
-definition stack_prog_var :: "program_var \<Rightarrow> stacked_prog_vars" where
+definition stack_prog_var :: "prog_var \<Rightarrow> stacked_prog_vars" where
 "stack_prog_var var = 
   (case var of
-    (program_var.Var (is_const, vars)) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_prog_var.Var (stack_var_init_decl val)))vars))
-  | (program_var.ExtVar (is_const, vars)) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_prog_var.ExtVar (stacked_var_init.Symbolic val None)))vars))
-  | (program_var.InOutVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_prog_var.InOutVar (stack_var_init_decl val)))vars)) 
-  | (program_var.InVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_prog_var.InVar (stack_var_init_decl val)))vars))
-  | (program_var.OutVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_prog_var.OutVar (stack_var_init_decl val)))vars)))"
+    (prog_var.Var (is_const, vars)) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_prog_var.Var (stack_var_init_decl val)))vars))
+  | (prog_var.ExtVar (is_const, vars)) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_prog_var.ExtVar (stacked_var_init.Symbolic val None)))vars))
+  | (prog_var.InOutVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_prog_var.InOutVar (stack_var_init_decl val)))vars)) 
+  | (prog_var.InVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_prog_var.InVar (stack_var_init_decl val)))vars))
+  | (prog_var.OutVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_prog_var.OutVar (stack_var_init_decl val)))vars)))"
 declare stack_prog_var_def [simp]
 
 text "Converting program vars list to stacked version"
-definition stack_prog_vars :: "program_var list \<Rightarrow> stacked_prog_vars" where
+definition stack_prog_vars :: "prog_var list \<Rightarrow> stacked_prog_vars" where
 "stack_prog_vars pl = (fold (\<lambda>val fm. (fmadd fm (stack_prog_var val))) pl fmempty)"
 declare stack_prog_vars_def [simp]
 

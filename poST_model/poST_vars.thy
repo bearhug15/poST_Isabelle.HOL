@@ -26,6 +26,7 @@ datatype all_var_init_decl = Var var_init_decl | GlobalVar global_var_init_decl
 type_synonym global_var_decl = "is_const * ((symbolic_var * all_var_init_decl) list)"
 
 type_synonym process_var = id
+type_synonym process_var_decl = "((process_var * process_name) list)"
 
 (*
 translations

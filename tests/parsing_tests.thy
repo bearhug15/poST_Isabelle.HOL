@@ -6,7 +6,7 @@ definition expr1 :: "expr" where
   (expr.Binary
     binary_op.Sum
     (expr.Unary
-      (Some unary_op.Minus)
+      unary_op.Minus
       (expr.SymbolicVar ''var1''))
     (expr.Binary
       binary_op.Mul
@@ -21,7 +21,7 @@ definition stacked_expr1 :: "expr_stack" where
 "stacked_expr1 = 
   [
   (expr_op.Binary binary_op.Sum),
-  (expr_op.Unary (Some unary_op.Minus)),
+  (expr_op.Unary unary_op.Minus),
   (expr_op.Get ''var1''),
   (expr_op.Binary binary_op.Mul),
   (expr_op.GetArray ''var2''),
@@ -52,7 +52,7 @@ definition statements1 :: "statement list" where
   (statement.Return),
   (statement.Exit),
   (statement.ProcessSt 
-    (process_statement.Start None)),
+    (process_contextment.Start None)),
   (statement.SetStateSt None),
   (statement.ResetSt),
   (statement.SelectSt
@@ -93,7 +93,7 @@ definition stmt1 :: "stmt" where
         (stmt.Comb
           (stmt.Exit)
           (stmt.Comb
-            (stmt.ProcessSt (process_statement.Start None))
+            (stmt.ProcessSt (process_contextment.Start None))
             (stmt.Comb
               (stmt.SetStateSt None)
               (stmt.Comb
@@ -182,16 +182,16 @@ definition check_process_parse :: "process_decl \<Rightarrow> stacked_process \<
 value "check_process_parse process1 stacked_process1"
 
 
-definition program_vars1 :: "program_var list" where
-"program_vars1 = 
-  [(program_var.ExtVar (False,[(''var1'',basic_post_type.Nat 0)])),
-   (program_var.Var (False,[(''var2'',var_init_decl.Symbolic (basic_post_type.Nat 1) None)])),
-   (program_var.InOutVar [(''var3'',var_init_decl.Symbolic (basic_post_type.Nat 2) None)]),
-   (program_var.InVar [(''var4'', var_init_decl.Symbolic (basic_post_type.Nat 3) None)]),
-   (program_var.OutVar [(''var5'', var_init_decl.Symbolic (basic_post_type.Nat 4) None)])]"
+definition prog_vars1 :: "prog_var list" where
+"prog_vars1 = 
+  [(prog_var.ExtVar (False,[(''var1'',basic_post_type.Nat 0)])),
+   (prog_var.Var (False,[(''var2'',var_init_decl.Symbolic (basic_post_type.Nat 1) None)])),
+   (prog_var.InOutVar [(''var3'',var_init_decl.Symbolic (basic_post_type.Nat 2) None)]),
+   (prog_var.InVar [(''var4'', var_init_decl.Symbolic (basic_post_type.Nat 3) None)]),
+   (prog_var.OutVar [(''var5'', var_init_decl.Symbolic (basic_post_type.Nat 4) None)])]"
 
-definition stacked_program_vars1 :: "stacked_prog_vars" where
-"stacked_program_vars1 =
+definition stacked_prog_vars1 :: "stacked_prog_vars" where
+"stacked_prog_vars1 =
   (fmap_of_list 
     [(''var1'', stacked_prog_var.ExtVar (stacked_var_init.Symbolic (basic_post_type.Nat 0) None)),
      (''var2'', stacked_prog_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 1) None)),
@@ -199,16 +199,16 @@ definition stacked_program_vars1 :: "stacked_prog_vars" where
      (''var4'', stacked_prog_var.InVar (stacked_var_init.Symbolic (basic_post_type.Nat 3) None)),
      (''var5'', stacked_prog_var.OutVar (stacked_var_init.Symbolic (basic_post_type.Nat 4) None))])"
 
-definition check_program_vars_parse :: "program_var list \<Rightarrow> stacked_prog_vars \<Rightarrow> bool" where
-"check_program_vars_parse pv spv = ((stack_prog_vars pv) = spv)"
+definition check_prog_vars_parse :: "prog_var list \<Rightarrow> stacked_prog_vars \<Rightarrow> bool" where
+"check_prog_vars_parse pv spv = ((stack_prog_vars pv) = spv)"
 
-value "check_program_vars_parse program_vars1 stacked_program_vars1"
+value "check_prog_vars_parse prog_vars1 stacked_prog_vars1"
 
 definition program1 :: "program_decl" where
-"program1 = (''program1'',program_vars1,[process1])"
+"program1 = (''program1'',prog_vars1,[process1])"
 
 definition stacked_program1 :: "stacked_program" where
-"stacked_program1 = (''program1'',stacked_program_vars1,[stacked_process1])"
+"stacked_program1 = (''program1'',stacked_prog_vars1,[stacked_process1])"
 
 definition check_program_parse :: "program_decl \<Rightarrow> stacked_program \<Rightarrow> bool" where
 "check_program_parse pd sp = ((stack_program pd) = sp)"

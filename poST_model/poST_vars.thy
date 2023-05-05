@@ -18,6 +18,10 @@ type_synonym inout_var_decl = "((symbolic_var * var_init_decl) list)"
 type_synonym var_decl = "is_const * ((symbolic_var * var_init_decl) list)"
 type_synonym ext_var_decl = "is_const * ((symbolic_var * basic_post_type) list)"
 
+datatype direct_type_perfix = I | Q | M
+datatype direct_size_prefix = X | B | W | D | L
+
+
 type_synonym direct_var = "direct_type_perfix * direct_size_prefix * (int list)"
 type_synonym global_var_init_decl = "direct_var * basic_post_type"
 

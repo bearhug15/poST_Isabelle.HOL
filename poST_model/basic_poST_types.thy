@@ -17,9 +17,6 @@ String string |
 Wstring wstring |
 Time time
 
-datatype direct_type_perfix = I | Q | M
-datatype direct_size_prefix = X | B | W | D | L
-
 datatype const = 
 Nat nat |
 Int int |

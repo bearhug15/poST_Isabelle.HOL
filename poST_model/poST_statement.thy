@@ -4,12 +4,12 @@ begin
 
 datatype common_var = Symbolic symbolic_var | Array symbolic_var expr
 type_synonym assign_statement = "common_var * expr"
-type_synonym start_process_statement = "process_name option"
-type_synonym stop_process_statement =  "process_name option"
-type_synonym error_process_statement = "process_name option"
-datatype process_statement = Start start_process_statement |
-                             Stop stop_process_statement |
-                             Error error_process_statement
+type_synonym start_process_contextment = "process_name option"
+type_synonym stop_process_contextment =  "process_name option"
+type_synonym error_process_contextment = "process_name option"
+datatype process_contextment = Start start_process_contextment |
+                             Stop stop_process_contextment |
+                             Error error_process_contextment
 type_synonym set_state_statement = "state_name option"
 
 type_synonym for_list = "expr * expr * (expr option)"
@@ -18,7 +18,7 @@ type_synonym case_list = "nat list"
                          FBInvocation func_block_name  "(param_assign list)" |
                          Return |
                          Exit |
-                         ProcessSt process_statement |
+                         ProcessSt process_contextment |
                          SetStateSt set_state_statement |
                          ResetSt |
                          SelectSt select_statement |

@@ -25,7 +25,7 @@ datatype stmt =
   FBInvocation fb_invocation |
   Return |
   Exit |
-  ProcessSt process_statement |
+  ProcessSt process_contextment |
   SetStateSt set_state_statement |
   ResetSt |
   IfSt expr stmt stmt |
@@ -35,28 +35,28 @@ datatype stmt =
 *)
 
 text "exec process statement"
-definition update_process_status :: "model_state \<Rightarrow> process_statement \<Rightarrow>(statement_result* model_state)" where
+definition update_process_status :: "model_context \<Rightarrow> process_contextment \<Rightarrow>(statement_result* model_context)" where
 "update_process_status st ps =
   (case ps of
-    process_statement.Start name_option \<Rightarrow> 
+    process_contextment.Start name_option \<Rightarrow> 
       (case name_option of
         None \<Rightarrow> (statement_result.Return, reset_cur_process st)
       | Some name \<Rightarrow> (statement_result.Continue, reset_process st name))
-  | process_statement.Stop name_option \<Rightarrow> 
+  | process_contextment.Stop name_option \<Rightarrow> 
       (case name_option of
         None \<Rightarrow> (statement_result.Return, stop_cur_process st)
       | Some name \<Rightarrow> (statement_result.Continue, stop_process st name))
-  | process_statement.Error name_option \<Rightarrow> 
+  | process_contextment.Error name_option \<Rightarrow> 
       (case name_option of
         None \<Rightarrow> (statement_result.Return, error_cur_process st)
   | Some name \<Rightarrow> (statement_result.Continue, error_process st name)))"
 declare update_process_status_def [simp]
 
 inductive 
-  eval :: "[model_state, expr, basic_post_type] \<Rightarrow> bool" ("_ \<turnstile> _ \<rightarrow> _") and
-  exec :: "[statement_result * model_state,stmt,statement_result * model_state] \<Rightarrow> bool" ("_ \<turnstile> _ \<longrightarrow> _") and
-  exec_func :: "[model_state,func_name,func_params,model_state*basic_post_type] \<Rightarrow> bool" ("_\<turnstile>_,_\<longrightarrow> _") and
-  assign_param :: "[model_state,assign_type,param_assign list,model_state,model_state] \<Rightarrow> bool"
+  eval :: "[model_context, expr, basic_post_type] \<Rightarrow> bool" ("_ \<turnstile> _ \<rightarrow> _") and
+  exec :: "[statement_result * model_context,stmt,statement_result * model_context] \<Rightarrow> bool" ("_ \<turnstile> _ \<longrightarrow> _") and
+  exec_func :: "[model_context,func_name,func_params,model_context*basic_post_type] \<Rightarrow> bool" ("_\<turnstile>_,_\<longrightarrow> _") and
+  assign_param :: "[model_context,assign_type,param_assign list,model_context,model_context] \<Rightarrow> bool"
   where
     BinOp : "\<lbrakk>st\<turnstile>exp1\<rightarrow>val1;
               st\<turnstile>exp2\<rightarrow>val2;
@@ -169,7 +169,7 @@ declare SetState [simp]
 declare Reset [simp]
 *)
 inductive 
-  eval_state :: "[model_state,stacked_state,statement_result * model_state] \<Rightarrow> bool" ("_ \<turnstile> _ : _") where
+  eval_state :: "[model_context,stacked_state,statement_result * model_context] \<Rightarrow> bool" ("_ \<turnstile> _ : _") where
     StateStep : "\<lbrakk>(statement_result.Continue,st)\<turnstile>stm\<longrightarrow>(res,st1);
                   (case res of 
                     statement_result.Continue \<Rightarrow> 
@@ -184,8 +184,8 @@ inductive
 (*declare eval_state.intros [simp,intro]*)
 
 inductive 
-  eval_process :: "[model_state,stacked_process,model_state] \<Rightarrow> bool" ("_\<turnstile>_\<Rightarrow>_") and
-  evals_process :: "[model_state,stacked_process list,model_state] \<Rightarrow> bool" ("_\<turnstile>_[\<Rightarrow>]_") where
+  eval_process :: "[model_context,stacked_process,model_context] \<Rightarrow> bool" ("_\<turnstile>_\<Rightarrow>_") and
+  evals_process :: "[model_context,stacked_process list,model_context] \<Rightarrow> bool" ("_\<turnstile>_[\<Rightarrow>]_") where
     ProcStep : "\<lbrakk> new_st = (set_cur_proc_name st name);
                   new_st\<turnstile>(get_state_by_name state_list (get_cur_proc_state_name new_st)) :(res,st1);
                   st2 = (case res of 
@@ -204,8 +204,8 @@ inductive
 (*declare eval_process_evals_process.intros [simp,intro]*)
 
 inductive 
-  eval_program :: "[model_state,stacked_program,model_state] \<Rightarrow> bool" ("_\<turnstile>_\<Longrightarrow>_") and
-  evals_program :: "[model_state,stacked_program list,model_state] \<Rightarrow> bool" ("_\<turnstile>_[\<Longrightarrow>]_") where
+  eval_program :: "[model_context,stacked_program,model_context] \<Rightarrow> bool" ("_\<turnstile>_\<Longrightarrow>_") and
+  evals_program :: "[model_context,stacked_program list,model_context] \<Rightarrow> bool" ("_\<turnstile>_[\<Longrightarrow>]_") where
     ProgStep : "\<lbrakk>new_st = (set_cur_prog_name st name);
                  new_st\<turnstile>process_list[\<Rightarrow>]st1;
                  st2 = process_vars_distribution st1\<rbrakk>\<Longrightarrow> 
@@ -218,17 +218,17 @@ inductive
 print_theorems
 
 inductive 
-  eval_model :: "[time,model_state,stacked_model,model_state] \<Rightarrow> bool" ("_:_\<turnstile>_\<mapsto>_") where
+  eval_model :: "[time,model_context,stacked_model,model_context] \<Rightarrow> bool" ("_:_\<turnstile>_\<mapsto>_") where
     ModelStep : "\<lbrakk>timed_st = (add_time_to_active_processes st t);
                   timed_st\<turnstile>prog_list[\<Longrightarrow>]st1;
-                  st2 = program_vars_distribution st1\<rbrakk> \<Longrightarrow>
+                  st2 = prog_vars_distribution st1\<rbrakk> \<Longrightarrow>
                 t:st\<turnstile>(_,_,prog_list,_,_)\<mapsto>st2"
 (*declare eval_model.intros [simp,intro]*)
 
 (*ModelStep ProgCons ProgNil ProgStep ProcCons ProcNil ProcStep StateStep Reset SetState Process Exit Return AssignA AssignS LoopT LoopF If Comb Blank*)
 
 inductive 
-  model_steps :: "[nat,time,model_state,stacked_model,model_state] \<Rightarrow> bool" ("_\<Zspot>_:_\<turnstile>_\<mapsto>_") where
+  model_steps :: "[nat,time,model_context,stacked_model,model_context] \<Rightarrow> bool" ("_\<Zspot>_:_\<turnstile>_\<mapsto>_") where
     ModelNil : "0\<Zspot>t:st\<turnstile>model\<mapsto>st"
   | ModelCons : "\<lbrakk>t:st\<turnstile>model\<mapsto>st1;
                   n\<Zspot>t:st1\<turnstile>model\<mapsto>st2\<rbrakk> \<Longrightarrow> 

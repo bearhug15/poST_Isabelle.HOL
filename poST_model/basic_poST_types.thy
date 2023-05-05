@@ -24,7 +24,6 @@ Real real |
 Time time |
 Bool bool
 
-value "(const.Int (-1))"
 type_synonym id = string
 type_synonym conf_name = id
 type_synonym resource_name = id

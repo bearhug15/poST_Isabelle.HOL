@@ -7,8 +7,8 @@ definition HandDryer :: "model" where
 "HandDryer = 
   (None,[],
   [(''HandDryer'',
-    [(program_var.InVar ( [(''hands'',var_init_decl.Symbolic (basic_post_type.Bool False) None)])),
-     (program_var.OutVar ( [(''control'',var_init_decl.Symbolic (basic_post_type.Bool False) None)]))],
+    [(prog_var.InVar ( [(''hands'',var_init_decl.Symbolic (basic_post_type.Bool False) None)])),
+     (prog_var.OutVar ( [(''control'',var_init_decl.Symbolic (basic_post_type.Bool False) None)]))],
     [(''Init'',
      [],
      [(''Wait'',
@@ -26,7 +26,7 @@ definition HandDryer :: "model" where
         Some (timeout_statement.Const 
               (const.Time (time.Time 0 0 0 2 0))
               [statement.AssignSt (common_var.Symbolic ''control'') (expr.Const (const.Bool False)),
-               statement.SetStateSt None]))
+               statement.SetStateSt (Some ''Wait'')]))
     :: state_decl]) 
   :: process_decl]):: program_decl],
   [],[]) "
@@ -38,8 +38,8 @@ declare stacked_HandDryer_def [simp]
 
 value "stacked_HandDryer"
 
-definition stacked_HandDaryer_model :: "model_state" where
-"stacked_HandDaryer_model = initialize_model_state stacked_HandDryer"
+definition stacked_HandDaryer_model :: "model_context" where
+"stacked_HandDaryer_model = initialize_model_context stacked_HandDryer"
 declare stacked_HandDaryer_model_def [simp]
 
 value "stacked_HandDaryer_model"
@@ -48,11 +48,11 @@ definition model_time :: "time" where
 "model_time = time.Time 0 0 0 0 100"
 declare model_time_def [simp]
 
-definition set_hands :: "model_state \<Rightarrow> model_state" where
+definition set_hands :: "model_context \<Rightarrow> model_context" where
 "set_hands st = set_symbvar st ''hands'' (basic_post_type.Bool True)"
 declare set_hands_def [simp]
 
-definition remove_hands :: "model_state \<Rightarrow> model_state" where
+definition remove_hands :: "model_context \<Rightarrow> model_context" where
 "remove_hands st = set_symbvar st ''hands'' (basic_post_type.Bool False)"
 declare remove_hands_def [simp]
 
@@ -107,7 +107,7 @@ schematic_goal "model_time:(set_hands stacked_HandDaryer_model)\<turnstile>stack
   apply (rule ProgNil)
   done
 
-definition set_control :: "model_state \<Rightarrow> model_state" where
+definition set_control :: "model_context \<Rightarrow> model_context" where
 "set_control st = set_symbvar st ''control'' (basic_post_type.Bool True)"
 declare set_control_def [simp]
 
@@ -126,11 +126,11 @@ schematic_goal "model_time:(set_control stacked_HandDaryer_model)\<turnstile>sta
   apply (rule ProgNil)
   done
 
-definition set_overtime :: "model_state \<Rightarrow> model_state" where
+definition set_overtime :: "model_context \<Rightarrow> model_context" where
 "set_overtime st = add_time_to_active_processes st (time.Time 0 0 0 2 1)"
 declare set_overtime_def [simp]
 
-definition set_work_state :: "model_state \<Rightarrow> model_state" where
+definition set_work_state :: "model_context \<Rightarrow> model_context" where
 "set_work_state st = set_into_next_state (set_state st ''Work'')"
 declare set_work_state_def [simp]
 

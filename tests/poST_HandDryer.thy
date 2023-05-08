@@ -153,4 +153,7 @@ schematic_goal "model_time:(set_work_state (set_overtime (set_control stacked_Ha
   apply (rule ProgNil)
   done
 
+values "{e. stacked_HandDaryer_model\<turnstile>(expr.SymbolicVar ''hands'')\<rightarrow>e}"
+
+
 end

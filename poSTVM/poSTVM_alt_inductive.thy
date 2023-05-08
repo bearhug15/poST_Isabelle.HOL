@@ -124,50 +124,73 @@ inductive
                         then (assign_param base_st assign_type.Conseq other st new_st) 
                         else (assign_param base_st assign_type.Conseq other (set_symbvar st name val) new_st))  \<rbrakk> \<Longrightarrow> 
                       assign_param base_st assign_type.Conseq ((param_assign.SymbolicVar name as_type exp)#other) st new_st"
-(*
-inductive_cases BinOp[elim!]: "st\<turnstile>expr.Binary bin_op exp1 exp2\<rightarrow>val"
-inductive_cases UnOp[elim!]: "st\<turnstile>expr.Unary un_op exp\<rightarrow>val"
-inductive_cases Const[elim!]: "st\<turnstile>expr.Const c\<rightarrow>val"
-inductive_cases Var[elim!]: "st\<turnstile>expr.SymbolicVar var_name\<rightarrow>val"
-inductive_cases ArrayVar[elim!]: "st\<turnstile>expr.ArrayVar var_name exp\<rightarrow>val"
-inductive_cases PSE[elim!]: "st\<turnstile>expr.ProcStatEpxr p_name p_status\<rightarrow>val"
-inductive_cases Blank[elim!]: "(res,st)\<turnstile>stmt.Blank\<longrightarrow>(res,st)"
-inductive_cases Comb[elim!]: "st\<turnstile>stmt.Comb s1 s2 \<longrightarrow> st2"
-inductive_cases If[elim!]: "st\<turnstile>stmt.IfSt exp s1 s2\<longrightarrow>st1"
-inductive_cases Loop[elim]: "st\<turnstile>stmt.WhileSt exp s\<longrightarrow>st"
-inductive_cases AssignS[elim!]: "st\<turnstile>stmt.AssignSt (common_var.Symbolic var_name) exp\<longrightarrow>(statement_result.Continue, st1)"
-inductive_cases AssignA[elim!]: "st\<turnstile>stmt.AssignSt (common_var.Array var_name pos) exp\<longrightarrow>(statement_result.Continue, st1)"
-inductive_cases Return[elim!]: "st\<turnstile>stmt.Return\<longrightarrow>(statement_result.Continue, snd st)"
-inductive_cases Exit[elim!]: "st\<turnstile>stmt.Exit\<longrightarrow>(statement_result.Continue, snd st)"
-inductive_cases Process[elim!]: "st\<turnstile>stmt.ProcessSt ps\<longrightarrow>st2"
-inductive_cases SetState[elim!]: "st\<turnstile>stmt.SetStateSt st_name_option\<longrightarrow>st1"
-inductive_cases Reset[elim!]: "st\<turnstile>stmt.ResetSt\<longrightarrow>(statement_result.Continue,st1)"
-*)
 
-(*declare eval_exec_exec_func_assign_param.intros [simp,intro]*)
-(*
-declare eval.simps [simp]
-declare exec.simps [simp]
-*)
-(*
-declare BinOp [simp]
-declare UnOp [simp]
-declare Var [simp]
-declare ArrayVar [simp]
-declare PSE [simp]
-declare Blank [simp]
-declare Comb [simp]
-declare If [simp]
-declare LoopF [simp]
-declare LoopT [simp]
-declare AssignS [simp]
-declare AssignA [simp]
-declare Return [simp]
-declare Exit [simp]
-declare Process [simp]
-declare SetState [simp]
-declare Reset [simp]
-*)
+lemma [code_pred_intro blank]: "(res,st)\<turnstile>stmt.Blank\<longrightarrow>(res,st)"
+  by (simp add:eval_exec_exec_func_assign_param.Blank )
+lemma [code_pred_intro comb]:
+"\<lbrakk>st\<turnstile>s1\<longrightarrow>st_res1;
+             (st_res1)\<turnstile>(case (fst st_res1) of
+                          (statement_result.Continue) \<Rightarrow> s2
+                        | (res) \<Rightarrow> stmt.Blank)\<longrightarrow>st2 \<rbrakk>\<Longrightarrow>
+           st\<turnstile>stmt.Comb s1 s2 \<longrightarrow> st2"
+  by (simp add: eval_exec_exec_func_assign_param.Comb)
+lemma [code_pred_intro ifs]:
+"\<lbrakk>(snd st)\<turnstile>exp\<rightarrow>val;
+            st\<turnstile>(if (basic_post_type_to_bool val) then s1 else s2)\<longrightarrow>st1\<rbrakk>\<Longrightarrow>
+         st\<turnstile>stmt.IfSt exp s1 s2\<longrightarrow>st1"
+  by (simp add: eval_exec_exec_func_assign_param.If)
+
+
+lemma [code_pred_intro true_loop]:
+  "\<lbrakk>(snd st)\<turnstile>exp\<rightarrow>val; (basic_post_type_to_bool val);
+              st\<turnstile>s\<longrightarrow>st1;st1\<turnstile>stmt.WhileSt exp s\<longrightarrow>st2\<rbrakk>\<Longrightarrow>
+            st\<turnstile>stmt.WhileSt exp s\<longrightarrow>st2"
+  by (simp add: eval_exec_exec_func_assign_param.LoopT)
+lemma [code_pred_intro false_loop]:
+  "\<lbrakk>(snd st)\<turnstile>exp\<rightarrow>val; \<not>(basic_post_type_to_bool val)\<rbrakk>\<Longrightarrow>
+            st\<turnstile>stmt.WhileSt exp s\<longrightarrow>st"
+  by (simp add: eval_exec_exec_func_assign_param.LoopF)
+
+lemma [code_pred_intro]: 
+"\<lbrakk>(snd st)\<turnstile>exp\<rightarrow>val; (basic_post_type_to_bool val);
+              st\<turnstile>s\<longrightarrow>st1;st1\<turnstile>stmt.WhileSt exp s\<longrightarrow>st2\<rbrakk>\<Longrightarrow>
+            st\<turnstile>stmt.WhileSt exp s\<longrightarrow>st2"
+ "\<lbrakk>(snd st)\<turnstile>exp\<rightarrow>val; \<not>(basic_post_type_to_bool val)\<rbrakk>\<Longrightarrow>
+            st\<turnstile>stmt.WhileSt exp s\<longrightarrow>st"
+  by (auto intro: eval_exec_exec_func_assign_param.intros)
+
+lemma [code_pred_intro assigns]:
+"\<lbrakk>(snd st)\<turnstile>exp\<rightarrow>val;
+                st1 = (set_symbvar (snd st) var_name val)\<rbrakk>\<Longrightarrow>
+              st\<turnstile>stmt.AssignSt (common_var.Symbolic var_name) exp\<longrightarrow>(statement_result.Continue, st1)"
+  by (simp add: eval_exec_exec_func_assign_param.AssignS)
+lemma [code_pred_intro assigna]:
+"\<lbrakk>(snd st)\<turnstile>exp\<rightarrow>val1;
+                (snd st)\<turnstile>pos\<rightarrow>val2;
+                st1 = (set_arvar (snd st) var_name val2 val1)\<rbrakk>\<Longrightarrow>
+              st\<turnstile>stmt.AssignSt (common_var.Array var_name pos) exp\<longrightarrow>(statement_result.Continue, st1)"
+  by (simp add: eval_exec_exec_func_assign_param.AssignA)
+lemma [code_pred_intro return]:
+"st\<turnstile>stmt.Return\<longrightarrow>(statement_result.Continue, snd st)"
+  by (simp add: eval_exec_exec_func_assign_param.Return)
+lemma [code_pred_intro exit]:
+"st\<turnstile>stmt.Exit\<longrightarrow>(statement_result.Continue, snd st)"
+  by (simp add: eval_exec_exec_func_assign_param.Exit)
+lemma [code_pred_intro process]:
+"\<lbrakk>st2 = (update_process_status (snd st) ps)\<rbrakk>\<Longrightarrow>
+                st\<turnstile>stmt.ProcessSt ps\<longrightarrow>st2"
+  by (simp add: eval_exec_exec_func_assign_param.Process)
+lemma [code_pred_intro set_state]:
+"\<lbrakk>st1 = (case st_name_option of
+                        None \<Rightarrow> (statement_result.Continue, set_next_state_next (snd st))
+                      | Some name \<Rightarrow> (statement_result.Continue, set_state (snd st) name))\<rbrakk>\<Longrightarrow>
+                st\<turnstile>stmt.SetStateSt st_name_option\<longrightarrow>st1"
+  by (simp add: eval_exec_exec_func_assign_param.SetState)
+lemma [code_pred_intro reset]:
+"\<lbrakk>st1 = reset_cur_timer(snd st)\<rbrakk> \<Longrightarrow> st\<turnstile>stmt.ResetSt\<longrightarrow>(statement_result.Continue,st1)"
+  by (simp add: eval_exec_exec_func_assign_param.Reset)
+
+
 inductive 
   eval_state :: "[model_context,stacked_state,statement_result * model_context] \<Rightarrow> bool" ("_ \<turnstile> _ : _") where
     StateStep : "\<lbrakk>(statement_result.Continue,st)\<turnstile>stm\<longrightarrow>(res,st1);
@@ -234,9 +257,19 @@ inductive
                   n\<Zspot>t:st1\<turnstile>model\<mapsto>st2\<rbrakk> \<Longrightarrow> 
                 (Suc n)\<Zspot>t:st\<turnstile>model\<mapsto>st2"
 
+
 code_pred eval.
 declare eval_def [simp]
+code_pred (modes: i \<Rightarrow> i \<Rightarrow> o \<Rightarrow> bool) exec 
+  apply (smt (verit) exec.cases)
+  done
 
+(*
+proof -
+  case exec
+  from this show thesis by (smt (verit) exec.cases)
+qed
+*)
 
 
 end

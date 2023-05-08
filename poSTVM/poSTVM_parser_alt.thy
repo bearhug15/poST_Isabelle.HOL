@@ -202,7 +202,6 @@ definition stack_proc_var :: "proc_var \<Rightarrow> stacked_proc_vars" where
 "stack_proc_var var = 
   (case var of
     (proc_var.Var (is_const, vars)) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_proc_var.Var (stack_var_init_decl val)))vars))
-  | (proc_var.ProcessVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(vals,name). (name,stacked_proc_var.ProcessVar vals)) vars))
   | (proc_var.InOutVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_proc_var.InOutVar (stack_var_init_decl val)))vars)) 
   | (proc_var.InVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_proc_var.InVar (stack_var_init_decl val)))vars))
   | (proc_var.OutVar vars) \<Rightarrow> (fmap_of_list (map (\<lambda>(name,val). (name,stacked_proc_var.OutVar (stack_var_init_decl val)))vars)))"

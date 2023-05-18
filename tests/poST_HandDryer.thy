@@ -69,14 +69,12 @@ schematic_goal "model_time:stacked_HandDaryer_model\<turnstile>stacked_HandDryer
      apply (rule ProcStep)
         apply (auto)
      apply (rule StateStep)
-       apply (rule If)
+       apply (rule IfF)
         apply (auto)
          apply (rule Var)
          apply (auto)
        apply (rule Blank)
-      apply (auto)
     apply (rule ProcNil)
-   apply (auto)
    apply (rule ProgNil)
   done
 
@@ -92,7 +90,7 @@ schematic_goal "model_time:(set_hands stacked_HandDaryer_model)\<turnstile>stack
      apply (rule ProcStep)
         apply (auto)
      apply (rule StateStep)
-       apply (rule If)
+       apply (rule IfT)
         apply (auto)
          apply (rule Var)
         apply (auto)
@@ -103,7 +101,6 @@ schematic_goal "model_time:(set_hands stacked_HandDaryer_model)\<turnstile>stack
        apply (rule SetState)
        apply (auto)
    apply (rule ProcNil)
-  apply (auto)
   apply (rule ProgNil)
   done
 
@@ -119,10 +116,10 @@ schematic_goal "model_time:(set_control stacked_HandDaryer_model)\<turnstile>sta
    apply (rule ProcCons) apply (auto)
     apply (rule ProcStep) apply (auto)
     apply (rule StateStep)
-      apply (rule If) apply (auto)
+      apply (rule IfF) apply (auto)
         apply (rule Var) apply (auto)
-      apply (rule Blank) apply (auto)
-   apply (rule ProcNil) apply (auto)
+      apply (rule Blank)
+   apply (rule ProcNil)
   apply (rule ProgNil)
   done
 
@@ -142,18 +139,66 @@ schematic_goal "model_time:(set_work_state (set_overtime (set_control stacked_Ha
    apply (rule ProcCons) apply (auto)
      apply (rule ProcStep) apply (auto)
        apply (rule StateStep)
-         apply (rule If) apply (auto)
+         apply (rule IfF) apply (auto)
            apply (rule Var) apply (auto)
      apply (rule Blank) apply (auto)
     apply (rule Comb)
      apply (rule AssignS) apply (auto)
      apply (rule Const) apply (auto)
     apply (rule SetState) apply (auto) 
-   apply (rule ProcNil) apply (auto)
+   apply (rule ProcNil)
   apply (rule ProgNil)
   done
 
-values "{e. stacked_HandDaryer_model\<turnstile>(expr.SymbolicVar ''hands'')\<rightarrow>e}"
+lemma 
+"st\<turnstile>stmt.AssignSt (common_var.Symbolic ''hands'') (expr.Const (const.Nat 1)) \<longrightarrow> st1 \<Longrightarrow>
+ basic_post_type_eq (get_cur_symbvar_by_name st1 ''hands'') (basic_post_type.Nat 1)"
+  apply (induction st1 arbitrary:st)
+  apply auto
+  apply (rule )
 
+(*
+text "If the dryer is on, then it turns off after no hands are present for 1 second."
+lemma
+  "model_time:stacked_HandDaryer_model\<turnstile>stacked_HandDryer\<mapsto>st \<Longrightarrow> 
+  time_more (get_cur_time stacked_HandDaryer_model) (time 0 0 0 1 0) \<Longrightarrow>
+  \<not>(basic_post_type_to_bool (get_cur_symbvar_by_name stacked_HandDaryer_model ''hands'')) \<Longrightarrow>
+  \<not>(basic_post_type_to_bool (get_cur_symbvar_by_name st ''control''))"
+proof 
+qed
+*)
+
+(*
+text "If the dryer was not turned on and hands appeared, it will turn on ASAP."
+lemma
+  "model_time:stacked_HandDaryer_model\<turnstile>stacked_HandDryer\<mapsto>st \<Longrightarrow> 
+  \<not>(basic_post_type_to_bool (get_cur_symbvar_by_name stacked_HandDaryer_model ''control'')) 
+  (basic_post_type_to_bool (get_cur_symbvar_by_name stacked_HandDaryer_model ''hands'')) \<Longrightarrow>
+  (basic_post_type_to_bool (get_cur_symbvar_by_name st ''control''))"
+proof sorry
+qed
+*)
+
+(*
+text "If the hands are present and the dryer is on, it will not turn off."
+lemma
+  "model_time:stacked_HandDaryer_model\<turnstile>stacked_HandDryer\<mapsto>st \<Longrightarrow> 
+  (basic_post_type_to_bool (get_cur_symbvar_by_name stacked_HandDaryer_model ''hands'')) \<Longrightarrow>
+  (basic_post_type_to_bool (get_cur_symbvar_by_name stacked_HandDaryer_model ''control'')) \<Longrightarrow>
+  (basic_post_type_to_bool (get_cur_symbvar_by_name st ''control''))"
+proof sorry
+qed
+*)
+
+(*
+text "If there is no hands and the dryer is not turned on, the dryer will not turn on until the hands appear."
+lemma
+  "model_time:stacked_HandDaryer_model\<turnstile>stacked_HandDryer\<mapsto>st \<Longrightarrow> 
+  \<not>(basic_post_type_to_bool (get_cur_symbvar_by_name stacked_HandDaryer_model ''hands'')) \<Longrightarrow>
+  \<not>(basic_post_type_to_bool (get_cur_symbvar_by_name stacked_HandDaryer_model ''control'')) \<Longrightarrow>
+  \<not>(basic_post_type_to_bool (get_cur_symbvar_by_name st ''control''))"
+proof sorry
+qed
+*)
 
 end

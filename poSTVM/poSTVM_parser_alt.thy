@@ -33,7 +33,7 @@ datatype stmt =
   FBInvocation func_block_name  "(param_assign list)" |
   Return |
   Exit |
-  ProcessSt process_contextment |
+  ProcessSt process_statement |
   SetStateSt set_state_statement |
   ResetSt |
   IfSt expr stmt stmt |

@@ -8,7 +8,7 @@ begin
 datatype expr_op =
   Unary unary_op | 
   Binary binary_op | 
-  Value basic_post_type | 
+  Value ptype | 
   Get symbolic_var |
   GetArray symbolic_var |
   CheckProcStat process_name proc_status |
@@ -130,8 +130,8 @@ declare case_to_stmt.elims [elim]
 text "Stacked version of variables"
 datatype stacked_array_interval = Expr expr_stack expr_stack | Int int int
 datatype stacked_var_init = 
-  Symbolic basic_post_type "expr_stack option" |
-  Array stacked_array_interval "basic_post_type list" "(expr_stack list) option" |
+  Symbolic ptype "expr_stack option" |
+  Array stacked_array_interval "ptype list" "(expr_stack list) option" |
   FunctionBlock func_block_name
 type_synonym stacked_vars = "((symbolic_var, stacked_var_init) fmap)"
 (*
@@ -249,29 +249,29 @@ declare stack_prog_vars_def [simp]
 
 text "Stacked version of state declaration"
 datatype timeout = Const const stmt | SymbolicVar symbolic_var stmt
-type_synonym stacked_state = "state_name * bool * stmt * (timeout option)"
+type_synonym stacked_state = "state_name  * stmt * (timeout option)"
 
 text "Converting state declaration to stacked version"
 fun stack_state :: "state_decl \<Rightarrow> stacked_state" where
   "stack_state (st_name, is_looped, st_list, None) = 
-  (st_name, is_looped, (st_list_to_stmt st_list), None)" 
+  (st_name, (st_list_to_stmt st_list), None)" 
 | "stack_state (st_name, is_looped, st_list, (Some (timeout_statement.Const val sl))) = 
-  (st_name, is_looped, (st_list_to_stmt st_list), (Some (timeout.Const val (st_list_to_stmt sl))))" 
+  (st_name, (st_list_to_stmt st_list), (Some (timeout.Const val (st_list_to_stmt sl))))" 
 | "stack_state (st_name, is_looped, st_list, (Some (timeout_statement.SymbolicVar val sl))) = 
-  (st_name, is_looped, (st_list_to_stmt st_list), (Some (timeout.SymbolicVar val (st_list_to_stmt sl))))" 
+  (st_name, (st_list_to_stmt st_list), (Some (timeout.SymbolicVar val (st_list_to_stmt sl))))" 
 declare stack_state.simps [simp]
 declare stack_state.elims [elim]
 
 text "Get state by name from list of states"
 primrec get_state_by_name :: "stacked_state list \<Rightarrow> state_name \<Rightarrow> stacked_state" where
-"get_state_by_name (ss#other) name = (let (st_name,_,_,_) = ss in (if st_name = name then ss else (get_state_by_name other name)) )"
+"get_state_by_name (ss#other) name = (let (st_name,_,_) = ss in (if st_name = name then ss else (get_state_by_name other name)) )"
 declare get_state_by_name.simps [simp]
 
 text "Get next state from name of current state"
 primrec get_next_state_sub :: "stacked_state list \<Rightarrow> state_name \<Rightarrow> stacked_state option" where
   "get_next_state_sub [] _ = None"
 | "get_next_state_sub (ss#other) name = 
-    (let (st_name,_,_,_) = ss in
+    (let (st_name,_,_) = ss in
       (if st_name = name 
       then (case other of
               [] \<Rightarrow> None
@@ -340,7 +340,7 @@ type_synonym stacked_func_block = "func_block_name * stacked_func_block_var list
 (*TO DO*)
 type_synonym stacked_func_blocks = "function_block_decl list"
 
-type_synonym stacked_func = "func_name * basic_post_type * stacked_func_vars * stmt"
+type_synonym stacked_func = "func_name * ptype * stacked_func_vars * stmt"
 type_synonym stacked_funcs = "(func_name,stacked_func) fmap"
 
 text "Transform function in stacked form"
@@ -357,7 +357,7 @@ declare stack_functions_def [simp]
 
 datatype stacked_global_var =
   Var stacked_var_init
-| Global direct_var  basic_post_type
+| Global direct_var  ptype
 
 type_synonym stacked_global_vars = "(symbolic_var,stacked_global_var) fmap"
 

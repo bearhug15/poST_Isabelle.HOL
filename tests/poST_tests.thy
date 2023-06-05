@@ -5,7 +5,7 @@ begin
 value "fmempty :: (nat,nat) fmap"
 definition test_process_context1 :: "process_context" where
 "test_process_context1 = 
-  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 0) None))],
+  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (ptype.Nat 0) None))],
   ''state1'',
   ''state1'',
   [''state1''],
@@ -32,7 +32,7 @@ definition test_ms1 :: "model_context" where
 
 definition test_process_context2 :: "process_context" where
 "test_process_context2 = 
-  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 1) None))],
+  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (ptype.Nat 1) None))],
   ''state1'',
   ''state1'',
   [''state1''],
@@ -77,7 +77,7 @@ lemma "(statement_result.Continue,test_ms1)\<turnstile>test_statement1\<longrigh
 
 definition test_process_context3 :: "process_context" where
 "test_process_context3 = 
-  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 2) None))],
+  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (ptype.Nat 2) None))],
   ''state1'',
   ''state1'',
   [''state1''],
@@ -124,8 +124,8 @@ done
 (* Don't work now*)
 definition test_process_context4 :: "process_context" where
 "test_process_context4 = 
-  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 0) None)),
-                 (''var2'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 0) None))],
+  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (ptype.Nat 0) None)),
+                 (''var2'',stacked_proc_var.Var (stacked_var_init.Symbolic (ptype.Nat 0) None))],
   ''state1'',
   ''state1'',
   [''state1''],
@@ -152,8 +152,8 @@ definition test_ms4 :: "model_context" where
 
 definition test_process_context5 :: "process_context" where
 "test_process_context5 = 
-  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 1) None)),
-                 (''var2'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 2) None))],
+  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (ptype.Nat 1) None)),
+                 (''var2'',stacked_proc_var.Var (stacked_var_init.Symbolic (ptype.Nat 2) None))],
   ''state1'',
   ''state1'',
   [''state1''],
@@ -219,8 +219,8 @@ find_theorems "(Suc 0)"
 
 definition test_process_context6 :: "process_context" where
 "test_process_context6 = 
-  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 1) None)),
-                 (''var2'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 3) None))],
+  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (ptype.Nat 1) None)),
+                 (''var2'',stacked_proc_var.Var (stacked_var_init.Symbolic (ptype.Nat 3) None))],
   ''state1'',
   ''state1'',
   [''state1''],
@@ -291,8 +291,8 @@ lemma "(statement_result.Continue,test_ms4)\<turnstile>test_statement4 \<longrig
 
 definition test_process_context7 :: "process_context" where
 "test_process_context7 = 
-  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 6) None)),
-                 (''var2'',stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 0) None))],
+  (fmap_of_list [(''var1'',stacked_proc_var.Var (stacked_var_init.Symbolic (ptype.Nat 6) None)),
+                 (''var2'',stacked_proc_var.Var (stacked_var_init.Symbolic (ptype.Nat 0) None))],
   ''state1'',
   ''state1'',
   [''state1''],

@@ -1,10 +1,10 @@
-theory basic_poST_types
+theory ptypes
   imports Main HOL.Real bit_types poST_time
 begin 
 
 type_synonym  wstring = "(char * char) list"
 
-datatype basic_post_type =
+datatype ptype =
 Nat nat |
 Int int |
 Real real |

@@ -25,7 +25,7 @@ definition stacked_expr1 :: "expr_stack" where
   (expr_op.Get ''var1''),
   (expr_op.Binary binary_op.Mul),
   (expr_op.GetArray ''var2''),
-  (expr_op.Value (basic_post_type.Nat 0)),
+  (expr_op.Value (ptype.Nat 0)),
   (expr_op.CheckProcStat ''process1'' proc_status.Active)]"
 
 definition check_expr_parse :: "expr \<Rightarrow> expr_stack \<Rightarrow> bool" where
@@ -52,7 +52,7 @@ definition statements1 :: "statement list" where
   (statement.Return),
   (statement.Exit),
   (statement.ProcessSt 
-    (process_contextment.Start None)),
+    (process_statement.Start None)),
   (statement.SetStateSt None),
   (statement.ResetSt),
   (statement.SelectSt
@@ -93,7 +93,7 @@ definition stmt1 :: "stmt" where
         (stmt.Comb
           (stmt.Exit)
           (stmt.Comb
-            (stmt.ProcessSt (process_contextment.Start None))
+            (stmt.ProcessSt (process_statement.Start None))
             (stmt.Comb
               (stmt.SetStateSt None)
               (stmt.Comb
@@ -150,19 +150,19 @@ value "check_state_parse state1 stacked_state1"
 
 definition process_vars1 :: "proc_var list" where
 "process_vars1 = 
-  [(proc_var.Var (False,[(''var1'', var_init_decl.Symbolic (basic_post_type.Nat 0) (Some (expr.Const (const.Int 1))))])),
+  [(proc_var.Var (False,[(''var1'', var_init_decl.Symbolic (ptype.Nat 0) (Some (expr.Const (const.Int 1))))])),
    (proc_var.ProcessVar []),
    (proc_var.InOutVar [(''var2'', var_init_decl.Array (array_interval.Int 0 1) [] None)]),
-   (proc_var.InVar [(''var3'', var_init_decl.Symbolic (basic_post_type.Nat 1) None)]),
-   (proc_var.OutVar [(''var4'', var_init_decl.Symbolic (basic_post_type.Nat 2) None)])]"
+   (proc_var.InVar [(''var3'', var_init_decl.Symbolic (ptype.Nat 1) None)]),
+   (proc_var.OutVar [(''var4'', var_init_decl.Symbolic (ptype.Nat 2) None)])]"
 
 definition stacked_process_vars1 :: "stacked_proc_vars" where
 "stacked_process_vars1 = 
   (fmap_of_list
-    [(''var1'', stacked_proc_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 0) (Some [(expr_op.Value (basic_post_type.Int 1))]))),
+    [(''var1'', stacked_proc_var.Var (stacked_var_init.Symbolic (ptype.Nat 0) (Some [(expr_op.Value (ptype.Int 1))]))),
      (''var2'', stacked_proc_var.InOutVar (stacked_var_init.Array (stacked_array_interval.Int 0 1) [] None)),
-     (''var3'', stacked_proc_var.InVar (stacked_var_init.Symbolic (basic_post_type.Nat 1) None)),
-     (''var4'', stacked_proc_var.OutVar (stacked_var_init.Symbolic (basic_post_type.Nat 2) None))])"
+     (''var3'', stacked_proc_var.InVar (stacked_var_init.Symbolic (ptype.Nat 1) None)),
+     (''var4'', stacked_proc_var.OutVar (stacked_var_init.Symbolic (ptype.Nat 2) None))])"
 
 definition check_proc_var_parse :: "proc_var list \<Rightarrow> stacked_proc_vars \<Rightarrow> bool" where
 "check_proc_var_parse pv spv = ((stack_proc_vars pv) = spv)"
@@ -184,20 +184,20 @@ value "check_process_parse process1 stacked_process1"
 
 definition prog_vars1 :: "prog_var list" where
 "prog_vars1 = 
-  [(prog_var.ExtVar (False,[(''var1'',basic_post_type.Nat 0)])),
-   (prog_var.Var (False,[(''var2'',var_init_decl.Symbolic (basic_post_type.Nat 1) None)])),
-   (prog_var.InOutVar [(''var3'',var_init_decl.Symbolic (basic_post_type.Nat 2) None)]),
-   (prog_var.InVar [(''var4'', var_init_decl.Symbolic (basic_post_type.Nat 3) None)]),
-   (prog_var.OutVar [(''var5'', var_init_decl.Symbolic (basic_post_type.Nat 4) None)])]"
+  [(prog_var.ExtVar (False,[(''var1'',ptype.Nat 0)])),
+   (prog_var.Var (False,[(''var2'',var_init_decl.Symbolic (ptype.Nat 1) None)])),
+   (prog_var.InOutVar [(''var3'',var_init_decl.Symbolic (ptype.Nat 2) None)]),
+   (prog_var.InVar [(''var4'', var_init_decl.Symbolic (ptype.Nat 3) None)]),
+   (prog_var.OutVar [(''var5'', var_init_decl.Symbolic (ptype.Nat 4) None)])]"
 
 definition stacked_prog_vars1 :: "stacked_prog_vars" where
 "stacked_prog_vars1 =
   (fmap_of_list 
-    [(''var1'', stacked_prog_var.ExtVar (stacked_var_init.Symbolic (basic_post_type.Nat 0) None)),
-     (''var2'', stacked_prog_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 1) None)),
-     (''var3'', stacked_prog_var.InOutVar (stacked_var_init.Symbolic (basic_post_type.Nat 2) None)),
-     (''var4'', stacked_prog_var.InVar (stacked_var_init.Symbolic (basic_post_type.Nat 3) None)),
-     (''var5'', stacked_prog_var.OutVar (stacked_var_init.Symbolic (basic_post_type.Nat 4) None))])"
+    [(''var1'', stacked_prog_var.ExtVar (stacked_var_init.Symbolic (ptype.Nat 0) None)),
+     (''var2'', stacked_prog_var.Var (stacked_var_init.Symbolic (ptype.Nat 1) None)),
+     (''var3'', stacked_prog_var.InOutVar (stacked_var_init.Symbolic (ptype.Nat 2) None)),
+     (''var4'', stacked_prog_var.InVar (stacked_var_init.Symbolic (ptype.Nat 3) None)),
+     (''var5'', stacked_prog_var.OutVar (stacked_var_init.Symbolic (ptype.Nat 4) None))])"
 
 definition check_prog_vars_parse :: "prog_var list \<Rightarrow> stacked_prog_vars \<Rightarrow> bool" where
 "check_prog_vars_parse pv spv = ((stack_prog_vars pv) = spv)"
@@ -218,14 +218,14 @@ value "check_program_parse program1 stacked_program1"
 
 definition global_vars1 :: "global_var_decl list" where
 "global_vars1 =
-  [(False,[(''var1'', all_var_init_decl.Var (var_init_decl.Symbolic (basic_post_type.Nat 0) None)),
-           (''var2'', all_var_init_decl.GlobalVar ((direct_type_perfix.I,direct_size_prefix.X,[]), basic_post_type.Nat 1))])]"
+  [(False,[(''var1'', all_var_init_decl.Var (var_init_decl.Symbolic (ptype.Nat 0) None)),
+           (''var2'', all_var_init_decl.GlobalVar ((direct_type_perfix.I,direct_size_prefix.X,[]), ptype.Nat 1))])]"
 
 definition stacked_global_vars1 :: "stacked_global_vars" where
 "stacked_global_vars1 =
   (fmap_of_list
-    [(''var1'', stacked_global_var.Var (stacked_var_init.Symbolic (basic_post_type.Nat 0) None)),
-     (''var2'', stacked_global_var.Global (direct_type_perfix.I,direct_size_prefix.X,[]) (basic_post_type.Nat 1))])"
+    [(''var1'', stacked_global_var.Var (stacked_var_init.Symbolic (ptype.Nat 0) None)),
+     (''var2'', stacked_global_var.Global (direct_type_perfix.I,direct_size_prefix.X,[]) (ptype.Nat 1))])"
 
 definition check_global_vars_parse :: "global_var_decl list \<Rightarrow> stacked_global_vars \<Rightarrow> bool" where
 "check_global_vars_parse gvd sgv = ((stack_global_vars gvd) = sgv)"

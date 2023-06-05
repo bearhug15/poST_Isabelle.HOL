@@ -1,5 +1,5 @@
 theory poST_expr
-  imports basic_post_types
+  imports ptypes
 begin
 datatype proc_status = 
 Active |

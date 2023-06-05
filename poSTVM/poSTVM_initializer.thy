@@ -2,7 +2,7 @@ theory poSTVM_initializer
   imports poSTVM_state_alt
 begin
 
-fun exec_sev_expr :: "nat \<Rightarrow> expr_stack \<Rightarrow> model_context \<Rightarrow> (basic_post_type option) list" where
+fun exec_sev_expr :: "nat \<Rightarrow> expr_stack \<Rightarrow> model_context \<Rightarrow> (ptype option) list" where
   "exec_sev_expr 0 _ st = [None]"
 | "exec_sev_expr (Suc n) [] st = [None]"
 | "exec_sev_expr (Suc n) ((expr_op.Unary un_op)#other) st = 
@@ -28,7 +28,7 @@ fun exec_sev_expr :: "nat \<Rightarrow> expr_stack \<Rightarrow> model_context \
 declare exec_sev_expr.simps [simp]
 declare exec_sev_expr.elims [elim]
 
-definition exec_expr :: "expr_stack \<Rightarrow> model_context \<Rightarrow> basic_post_type option" where
+definition exec_expr :: "expr_stack \<Rightarrow> model_context \<Rightarrow> ptype option" where
  "exec_expr st model_st = nth (exec_sev_expr 1 st model_st) 0"
 declare exec_expr_def [simp]
 
@@ -40,7 +40,7 @@ definition initialize_array :: "model_context \<Rightarrow> stacked_var_init \<R
       (stacked_var_init.Array
         (case interval of
           (stacked_array_interval.Expr exp1 exp2) \<Rightarrow> 
-            (stacked_array_interval.Int (basic_post_type_to_int (the (exec_expr exp1 st))) (basic_post_type_to_int (the (exec_expr exp2 st)))) |
+            (stacked_array_interval.Int (ptype_to_int (the (exec_expr exp1 st))) (ptype_to_int (the (exec_expr exp2 st)))) |
           (stacked_array_interval.Int int1 int2) =>
             (stacked_array_interval.Int int1 int2))
         (map 
@@ -51,7 +51,7 @@ definition initialize_array :: "model_context \<Rightarrow> stacked_var_init \<R
       (stacked_var_init.Array 
         (case interval of
           (stacked_array_interval.Expr exp1 exp2) \<Rightarrow> 
-            (stacked_array_interval.Int (basic_post_type_to_int (the (exec_expr exp1 st))) (basic_post_type_to_int (the (exec_expr exp2 st)))) |
+            (stacked_array_interval.Int (ptype_to_int (the (exec_expr exp1 st))) (ptype_to_int (the (exec_expr exp2 st)))) |
           (stacked_array_interval.Int int1 int2) =>
             (stacked_array_interval.Int int1 int2)) 
         values 
@@ -94,21 +94,18 @@ declare initialize_stacked_proc_vars_def [simp]
 text "Initialization of process variables"
 definition initialize_process_vars :: "model_context \<Rightarrow> model_context" where
 "initialize_process_vars st =
-  (case st of (model_context.ST global_vars_list program_map cur_prog_name f1 f2) \<Rightarrow>
-   (model_context.ST 
-    global_vars_list 
+  (let (global_vars, pg_map, pg_name, f1, f2, value) = st in
+   (global_vars, 
     (fmmap 
-       (\<lambda>(var_list,proc_map,proc_name). 
+       (\<lambda>(var_list,pc_map,pc_name). 
           (var_list,
             (fmmap 
               (\<lambda>(var_list,v1,v2,v3,v4).
                 (initialize_stacked_proc_vars st var_list,v1,v2,v3,v4))
-              proc_map),
-          proc_name)) 
-       program_map)
-    cur_prog_name 
-    f1 
-    f2))"
+              pc_map),
+          pc_name)) 
+       pg_map),
+    pg_name, f1, f2,value))"
 declare initialize_process_vars_def [simp]
 
 text "Initialization of prog_vars"
@@ -127,16 +124,13 @@ declare initialize_stacked_prog_vars_def [simp]
 text "Initialization of program variables"
 definition initialize_prog_vars :: "model_context \<Rightarrow> model_context" where
 "initialize_prog_vars st  =
-  (case st of (model_context.ST global_vars_list program_map cur_prog_name f1 f2) \<Rightarrow> 
-    (model_context.ST 
-    global_vars_list 
-    (fmmap 
-       (\<lambda>(var_list,proc_map,proc_name). 
-          (initialize_stacked_prog_vars st var_list,proc_map,proc_name)) 
-       program_map)
-    cur_prog_name 
-    f1 
-    f2))"
+  (let (global_vars, pg_map, pg_name, f1, f2, value) = st in
+    (global_vars, 
+     (fmmap 
+       (\<lambda>(var_list,pc_map,pc_name). 
+          (initialize_stacked_prog_vars st var_list,pc_map,pc_name)) 
+       pg_map),
+      pg_name, f1, f2, value))"
 declare initialize_prog_vars_def [simp]
 
 text "Initialization of global_vars"
@@ -151,17 +145,16 @@ declare initialize_stacked_global_vars_def [simp]
 text "Initialization of global_vars in model state"
 definition initialize_global_vars :: "model_context \<Rightarrow> model_context" where
 "initialize_global_vars st =
-  (case st of (model_context.ST global_vars program_map cur_prog_name f1 f2) \<Rightarrow> 
-   (model_context.ST 
-    (initialize_stacked_global_vars st global_vars) 
-     program_map cur_prog_name f1 f2))"
+  (let (global_vars, pg_map, pg_name, f1, f2, value) = st in 
+   ((initialize_stacked_global_vars st global_vars), 
+     pg_map, pg_name, f1, f2, value))"
 
 text "Extracting new process state from stacked process"
 definition extract_process_context :: "stacked_process \<Rightarrow> process_context" where
 "extract_process_context sp  = 
   (case sp of 
     (proc_name, var_list,stst_list) \<Rightarrow> 
-    (let states = (map (\<lambda>(name,_,_,_). name) stst_list)
+    (let states = (map (\<lambda>(name,_,_). name) stst_list)
       in (var_list, hd states, hd states, states, (if (proc_name = ''Init'') then proc_status.Active else proc_status.Inactive), (time.Time 0 0 0 0 0))))"
 declare extract_process_context_def [simp]
 
@@ -188,7 +181,7 @@ definition extract_model_context :: "stacked_model \<Rightarrow> model_context" 
       (map
         (\<lambda>(name, var_list, proc_list). (name, (extract_program_context (name, var_list, proc_list))))
         prog_list))
-    in (model_context.ST global prog_map name f1 f2)))"
+    in (global, prog_map, name, f1, f2, (ptype.Nat 0))))"
 declare extract_model_context_def [simp]
 
 text "Initialization of model state"
@@ -202,7 +195,7 @@ definition initialize_model_context :: "stacked_model \<Rightarrow> model_contex
 declare initialize_model_context_def [simp]
 
 text "Transforming function vars to process vars"
-definition transform_func_to_proc_vars :: "stacked_func_vars \<Rightarrow> func_name \<Rightarrow> basic_post_type \<Rightarrow> stacked_proc_vars" where
+definition transform_func_to_proc_vars :: "stacked_func_vars \<Rightarrow> func_name \<Rightarrow> ptype \<Rightarrow> stacked_proc_vars" where
 "transform_func_to_proc_vars vars name val = 
  (fmupd 
   name
@@ -223,16 +216,16 @@ definition stacked_func_to_stacked_model :: "stacked_func \<Rightarrow> stacked_
   in (None,fmempty,
       [(f_name,fmempty,
         [(f_name,(transform_func_to_proc_vars vars f_name value),
-          [(f_name,False,stmts,None)])])],
+          [(f_name,stmts,None)])])],
       [],fmempty))"
 declare stacked_func_to_stacked_model_def [simp]
 
 text "Generate proxy model state for stacked model"
 definition gen_proxy_for_func :: "model_context \<Rightarrow> stacked_func \<Rightarrow> model_context" where
 "gen_proxy_for_func st func = 
-  (case (st,(initialize_model_context (stacked_func_to_stacked_model func))) of 
-    ((ST _ _ _ _ funcs),
-     (ST v1 v2 v3 v4 _)) \<Rightarrow> ((ST v1 v2 v3 v4 funcs)))"
+(let (_, _, _, f1, f2, _) = st;
+     (v1, v2, v3, _, _, val) = (initialize_model_context (stacked_func_to_stacked_model func)) in
+     (v1,v2,v3,f1,f2,val))"
 declare gen_proxy_for_func_def [simp]
 
 

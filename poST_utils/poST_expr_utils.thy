@@ -22,9 +22,9 @@ text "Executing binary operation"
 definition binary_op_exec :: "binary_op \<Rightarrow> ptype \<Rightarrow> ptype \<Rightarrow> ptype" where
 "binary_op_exec op var1 var2 = 
   (case op of 
-    binary_op.And \<Rightarrow> ptype.Bool(ptype_and var1 var2)|
- binary_op.Or \<Rightarrow> ptype.Bool(ptype_or var1 var2)|
-    binary_op.Xor \<Rightarrow> ptype.Bool(ptype_xor var1 var2) | 
+    binary_op.And \<Rightarrow> (ptype_and var1 var2)|
+    binary_op.Or \<Rightarrow> (ptype_or var1 var2)|
+    binary_op.Xor \<Rightarrow> (ptype_xor var1 var2) | 
     binary_op.Eq \<Rightarrow> ptype.Bool(ptype_eq var1 var2)| 
     binary_op.NotEq \<Rightarrow>ptype.Bool(ptype_noteq var1 var2)| 
     binary_op.Less \<Rightarrow>ptype.Bool(ptype_less var1 var2)| 

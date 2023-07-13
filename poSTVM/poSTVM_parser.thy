@@ -1,4 +1,4 @@
-theory poSTVM_parser_alt
+theory poSTVM_parser
   imports
     "~~/poST/poST_model/poST_model" 
     "~~/poST/poST_utils/poST_vars_utils"

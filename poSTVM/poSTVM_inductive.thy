@@ -1,13 +1,9 @@
-theory poSTVM_alt_inductive
+theory poSTVM_inductive
   imports 
-    "~~/poST/poSTVM/poSTVM_state_alt" 
     "~~/poST/poSTVM/poSTVM_initializer"
+    "~~/poST/poST_lemmas/poSTVM_state_lemmas"
 begin
-datatype statement_result =  Continue | Exit | Return 
 
-
-
-value "butlast [1::nat,2,3,4]" 
 
 (*
 datatype expr = Unary "unary_op option"  prim_expr |
@@ -33,7 +29,7 @@ datatype stmt =
   Comb stmt stmt |
   Blank 
 *)
-
+(*
 text "exec process statement"
 definition update_process_status :: "model_context \<Rightarrow> process_statement \<Rightarrow>(statement_result* model_context)" where
 "update_process_status st ps =
@@ -51,6 +47,7 @@ definition update_process_status :: "model_context \<Rightarrow> process_stateme
         None \<Rightarrow> (statement_result.Return, error_cur_process st)
   | Some name \<Rightarrow> (statement_result.Continue, error_process st name)))"
 declare update_process_status_def [simp]
+*)
 
 inductive 
   eval :: "[model_context, expr, model_context] \<Rightarrow> bool" ("_ \<turnstile> _ \<rightarrow> _") and
@@ -84,7 +81,7 @@ inductive
 
   | Blank : "st\<turnstile>stmt.Blank\<longrightarrow>st"
   | Comb : "\<lbrakk>st\<turnstile>s1\<longrightarrow>st1;
-             st1\<turnstile>s2\<longrightarrow>st2\<rbrakk>\<Longrightarrow>
+             (if (is_value (get_value st1)) then st1\<turnstile>s2\<longrightarrow>st2 else st2 = st1)\<rbrakk>\<Longrightarrow>
            st\<turnstile>stmt.Comb s1 s2 \<longrightarrow>st2"
   | IfT : "\<lbrakk>st\<turnstile>exp\<rightarrow>st1;
             (ptype_to_bool (get_value st1));
@@ -93,6 +90,8 @@ inductive
   | IfF : "\<lbrakk>st\<turnstile>exp\<rightarrow>st1;
            \<not>(ptype_to_bool (get_value st1));
            st1\<turnstile>s2\<longrightarrow>st2\<rbrakk> \<Longrightarrow> st\<turnstile>stmt.IfSt exp s1 s2\<longrightarrow>st2"
+  | LoopE : "\<lbrakk>(get_value st) = ptype.Exit;
+              st1 = (set_value st (ptype.Bool False))\<rbrakk>\<Longrightarrow>st\<turnstile>stmt.WhileSt exp s\<longrightarrow>st1"
   | LoopF : "\<lbrakk>st\<turnstile>exp\<rightarrow>st1; 
               \<not>(ptype_to_bool (get_value st1))\<rbrakk>\<Longrightarrow>
               st\<turnstile>stmt.WhileSt exp s\<longrightarrow>st1"
@@ -110,8 +109,8 @@ inductive
                 val2 = get_value st2;
                 st3 = (set_arvar st2 var_name val2 val1)\<rbrakk>\<Longrightarrow>
               st\<turnstile>stmt.AssignSt (common_var.Array var_name pos) exp\<longrightarrow>st3"
-  | Return : "st\<turnstile>stmt.Return\<longrightarrow>st"
-  | Exit : "st\<turnstile>stmt.Exit\<longrightarrow>st"
+  | Return : "\<lbrakk>st1 = (set_value st ptype.Return)\<rbrakk>\<Longrightarrow>st\<turnstile>stmt.Return\<longrightarrow>st1"
+  | Exit : "\<lbrakk>st1 = (set_value st ptype.Exit)\<rbrakk>\<Longrightarrow>st\<turnstile>stmt.Exit\<longrightarrow>st1"
   | ProcessStart : "\<lbrakk>st1 = (case stm_name_option of None \<Rightarrow> reset_cur_process st | Some name \<Rightarrow> reset_process st name)\<rbrakk> \<Longrightarrow> 
                     st\<turnstile>stmt.ProcessSt (process_statement.Start stm_name_option)\<longrightarrow>st1"
   | ProcessStop : "\<lbrakk>st1 = (case stm_name_option of None \<Rightarrow> stop_cur_process st | Some name \<Rightarrow> stop_process st name)\<rbrakk> \<Longrightarrow> 
@@ -146,6 +145,8 @@ inductive
                       assign_param base_st assign_type.Conseq ((param_assign.SymbolicVar name as_type exp)#other) st new_st"
 
 print_theorems 
+
+declare eval_exec_exec_func_assign_param.intros [intro]
 
 text "eval code_pred_intro lemmas"
 lemma [code_pred_intro]: 
@@ -197,45 +198,55 @@ text "exec code_pred_intro lemmas"
 lemma [code_pred_intro]:
 "st\<turnstile>stmt.Blank\<longrightarrow>st"
 "\<lbrakk>st\<turnstile>s1\<longrightarrow>st1;
-             st1\<turnstile>s2\<longrightarrow>st2\<rbrakk>\<Longrightarrow>
-           st\<turnstile>stmt.Comb s1 s2 \<longrightarrow>st2"
+  st1\<turnstile>(case (get_value st1) of
+         ptype.Exit \<Rightarrow> stmt.Blank 
+       | ptype.Return \<Rightarrow> stmt.Blank
+       | _ \<Rightarrow> s2)\<longrightarrow>st2\<rbrakk>\<Longrightarrow>
+st\<turnstile>stmt.Comb s1 s2 \<longrightarrow>st2"
 "\<lbrakk>st\<turnstile>exp\<rightarrow>st1;
-            (ptype_to_bool (get_value st1));
-            st1\<turnstile>s1\<longrightarrow>st2\<rbrakk>\<Longrightarrow>
-         st\<turnstile>stmt.IfSt exp s1 s2\<longrightarrow>st2"
+  (ptype_to_bool (get_value st1));
+  st1\<turnstile>s1\<longrightarrow>st2\<rbrakk>\<Longrightarrow>
+st\<turnstile>stmt.IfSt exp s1 s2\<longrightarrow>st2"
 "\<lbrakk>st\<turnstile>exp\<rightarrow>st1;
-           \<not>(ptype_to_bool (get_value st1));
-           st1\<turnstile>s2\<longrightarrow>st2\<rbrakk> \<Longrightarrow> st\<turnstile>stmt.IfSt exp s1 s2\<longrightarrow>st2"
+  \<not>(ptype_to_bool (get_value st1));
+  st1\<turnstile>s2\<longrightarrow>st2\<rbrakk>\<Longrightarrow> 
+st\<turnstile>stmt.IfSt exp s1 s2\<longrightarrow>st2"
+"\<lbrakk>(get_value st) = ptype.Exit;
+  st1 = (set_value st (ptype.Bool False))\<rbrakk>\<Longrightarrow>
+st\<turnstile>stmt.WhileSt exp s\<longrightarrow>st1"
 "\<lbrakk>st\<turnstile>exp\<rightarrow>st1; 
-              \<not>(ptype_to_bool (get_value st1))\<rbrakk>\<Longrightarrow>
-              st\<turnstile>stmt.WhileSt exp s\<longrightarrow>st1"
+  \<not>(ptype_to_bool (get_value st1))\<rbrakk>\<Longrightarrow>
+st\<turnstile>stmt.WhileSt exp s\<longrightarrow>st1"
 "\<lbrakk>st\<turnstile>exp\<rightarrow>st1; 
-              (ptype_to_bool (get_value st1));
-              st1\<turnstile>s\<longrightarrow>st2;
-              st2\<turnstile>stmt.WhileSt exp s\<longrightarrow>st3\<rbrakk>\<Longrightarrow>
-              st\<turnstile>stmt.WhileSt exp s\<longrightarrow>st3"
+  (ptype_to_bool (get_value st1));
+  st1\<turnstile>s\<longrightarrow>st2;
+   st2\<turnstile>stmt.WhileSt exp s\<longrightarrow>st3\<rbrakk>\<Longrightarrow>
+st\<turnstile>stmt.WhileSt exp s\<longrightarrow>st3"
 "\<lbrakk>st\<turnstile>exp\<rightarrow>st1;
-                st2 = (set_cur_symbvar st1 var_name (get_value st1))\<rbrakk>\<Longrightarrow>
-                st\<turnstile>stmt.AssignSt (common_var.Symbolic var_name) exp\<longrightarrow>st2"
+  st2 = (set_cur_symbvar st1 var_name (get_value st1))\<rbrakk>\<Longrightarrow>
+st\<turnstile>stmt.AssignSt (common_var.Symbolic var_name) exp\<longrightarrow>st2"
 "\<lbrakk>st\<turnstile>exp\<rightarrow>st1;
-                val1 = get_value st1;
-                st1\<turnstile>pos\<rightarrow>st2;
-                val2 = get_value st2;
-                st3 = (set_arvar st2 var_name val2 val1)\<rbrakk>\<Longrightarrow>
-              st\<turnstile>stmt.AssignSt (common_var.Array var_name pos) exp\<longrightarrow>st3"
-"st\<turnstile>stmt.Return\<longrightarrow>st"
-"st\<turnstile>stmt.Exit\<longrightarrow>st"
+  val1 = get_value st1;
+  st1\<turnstile>pos\<rightarrow>st2;
+  val2 = get_value st2;
+  st3 = (set_arvar st2 var_name val2 val1)\<rbrakk>\<Longrightarrow>
+st\<turnstile>stmt.AssignSt (common_var.Array var_name pos) exp\<longrightarrow>st3"
+"\<lbrakk>st1 = (set_value st ptype.Return)\<rbrakk>\<Longrightarrow>
+st\<turnstile>stmt.Return\<longrightarrow>st1"
+"\<lbrakk>st1 = (set_value st ptype.Exit)\<rbrakk>\<Longrightarrow>
+st\<turnstile>stmt.Exit\<longrightarrow>st1"
 "\<lbrakk>st1 = (case stm_name_option of None \<Rightarrow> reset_cur_process st | Some name \<Rightarrow> reset_process st name)\<rbrakk> \<Longrightarrow> 
-                    st\<turnstile>stmt.ProcessSt (process_statement.Start stm_name_option)\<longrightarrow>st1"
+st\<turnstile>stmt.ProcessSt (process_statement.Start stm_name_option)\<longrightarrow>st1"
 "\<lbrakk>st1 = (case stm_name_option of None \<Rightarrow> stop_cur_process st | Some name \<Rightarrow> stop_process st name)\<rbrakk> \<Longrightarrow> 
-                    st\<turnstile>stmt.ProcessSt (process_statement.Start stm_name_option)\<longrightarrow>st1"
+st\<turnstile>stmt.ProcessSt (process_statement.Start stm_name_option)\<longrightarrow>st1"
 "\<lbrakk>st1 = (case stm_name_option of None \<Rightarrow> error_cur_process st | Some name \<Rightarrow> error_process st name)\<rbrakk> \<Longrightarrow> 
-                    st\<turnstile>stmt.ProcessSt (process_statement.Start stm_name_option)\<longrightarrow>st1"
+st\<turnstile>stmt.ProcessSt (process_statement.Start stm_name_option)\<longrightarrow>st1"
 "\<lbrakk>st1 = (case st_name_option of
-                        None \<Rightarrow> (set_next_state_next st)
-                      | Some name \<Rightarrow> (set_state st name))\<rbrakk>\<Longrightarrow>
-                st\<turnstile>stmt.SetStateSt st_name_option\<longrightarrow>st1"
-"\<lbrakk>st1 = reset_cur_timer st\<rbrakk> \<Longrightarrow> st\<turnstile>stmt.ResetSt\<longrightarrow>st1"
+          None \<Rightarrow> (set_next_state_next st)
+        | Some name \<Rightarrow> (set_state st name))\<rbrakk>\<Longrightarrow>
+st\<turnstile>stmt.SetStateSt st_name_option\<longrightarrow>st1"
+"\<lbrakk>st1 = reset_cur_timer st\<rbrakk> \<Longrightarrow> 
+st\<turnstile>stmt.ResetSt\<longrightarrow>st1"
 by (auto intro: eval_exec_exec_func_assign_param.intros)
 
 inductive_cases BlankE[elim!]: "st\<turnstile>stmt.Blank\<longrightarrow>st1"
@@ -290,7 +301,8 @@ inductive_cases FuncE[elim!]:"st\<turnstile>name,params\<longrightarrow>(new_st,
 *)
 inductive 
   eval_state :: "[model_context,stacked_state,model_context] \<Rightarrow> bool" ("_ \<turnstile> _ : _") where
-    StateStep : "\<lbrakk>st\<turnstile>stm\<longrightarrow>st1;
+    StateStep : "\<lbrakk>st\<turnstile>stm\<longrightarrow>st0;
+                  st1 = (set_value st0 (ptype.Bool False));
                   (case timeout_op of
                     None \<Rightarrow> st2 = st1
                     | (Some timeout) \<Rightarrow> 
@@ -348,7 +360,9 @@ inductive
                   n\<Zspot>t:st1\<turnstile>model\<mapsto>st2\<rbrakk> \<Longrightarrow> 
                 (Suc n)\<Zspot>t:st\<turnstile>model\<mapsto>st2"
 
+declare eval_def [simp]
 
+(*
 lemma comb_assoc:
 "st\<turnstile>stmt.Comb (stmt.Comb c1 c2) c3 \<longrightarrow> st1 \<longleftrightarrow> st\<turnstile>stmt.Comb c1 (stmt.Comb c2 c3) \<longrightarrow> st1"
 proof 
@@ -372,7 +386,7 @@ next
   with c3
   show "st\<turnstile>(stmt.Comb (stmt.Comb c1 c2) c3)\<longrightarrow>st1" by (simp add: Comb)
 qed
-
+*)
 (*
 Doesn't because b may has side effects 
 lemma
@@ -380,13 +394,7 @@ lemma
   by sledgehammer
 *)  
 
-abbreviation equiv_c :: "stmt \<Rightarrow> stmt \<Rightarrow> bool" (infix "\<sim>" 50) where
-"c \<sim> c' \<equiv> (\<forall>s t. s\<turnstile>c\<longrightarrow>t = s\<turnstile>c'\<longrightarrow>t)"
-
-lemma sim_refl:  "c \<sim> c" by simp
-lemma sim_sym:   "(c \<sim> c') = (c' \<sim> c)" by auto
-lemma sim_trans: "c \<sim> c' \<Longrightarrow> c' \<sim> c'' \<Longrightarrow> c \<sim> c''" by auto
-
+(*
 lemma unfold_while:
 "(stmt.WhileSt b c) \<sim> (stmt.IfSt b (stmt.Comb c (stmt.WhileSt b c)) (stmt.Blank))" (is "?w \<sim> ?iw")
 proof -
@@ -416,7 +424,7 @@ proof -
   ultimately
   show ?thesis by meson
 qed
-
+*)
 (*
 Doesn't because b may has side effects
 lemma triv_if:
@@ -474,184 +482,6 @@ theorem
 proof (induction arbitrary: st2 rule: eval_exec_exec_func_assign_param.induct)
 *)
 
-declare eval_def [simp]
-
-
-lemma const_simp[simp]: "const_to_basic (const.Nat val) = ptype.Nat val"by auto
-
-lemma value_mirror[simp]: "get_value (set_value st val) = val"
-  apply (induction st)
-  apply auto
-  done
-
-lemma global_vars_mirror1[simp]: "get_global_vars (set_global_vars st vars) = vars"
-  apply (induction st)
-  apply auto
-  done
-
-lemma global_vars_mirror2[simp]:
-  "(get_var_from_global_vars_by_name (set_var_in_global_vars_by_name st name val) name) = val"
-proof -
-  show ?thesis sorry
-qed
-
-lemma prog_vars_mirror1[simp]: "get_cur_prog_vars (set_cur_prog_vars st vars) = vars" 
-proof -
-  show ?thesis sorry
-qed
-
-lemma prog_vars_mirror2[simp]: "(get_prog_var_by_name (set_var_in_prog_vars_by_name st name val) name) = val" 
-proof -
-  show ?thesis sorry
-qed
-
-lemma basic_eq[simp]: "ptype_eq (ptype.Nat v1) (ptype.Nat v2) \<longleftrightarrow> v1 = v2" by auto
-
-declare Let_def[simp] option.split[split]
-
-lemma set_symbvar_global_level_keep[simp]:
-  assumes "get_var_level_by_name st name = var_level.Global"
-  shows "get_var_level_by_name (set_global_var st name val) name = var_level.Global"
-proof -
-  show ?thesis sorry
-qed
-
-lemma set_symbvar_program_level_keep[simp]:
-  assumes "get_var_level_by_name st name = var_level.Program"
-  shows "get_var_level_by_name (set_cur_prog_var st name val) name = var_level.Program"
-proof -
-  show ?thesis sorry
-qed
-
-lemma set_symbvar_process_level_keep[simp]:
-  assumes "get_var_level_by_name st name = var_level.Process"
-  shows "get_var_level_by_name (set_cur_proc_var st name val) name = var_level.Process"
-proof -
-  show ?thesis sorry
-qed
-
-lemma set_symbvar_level_keep[simp]:
-  fixes level :: var_level
-  assumes "get_var_level_by_name st name = level"
-  shows "get_var_level_by_name (set_cur_symbvar st name val) name = level"
-proof (cases level)
-  case Global
-  hence "get_var_level_by_name (set_cur_symbvar st name val) name = get_var_level_by_name (set_global_var st name (stacked_var_init.Symbolic val None)) name" using assms by auto
-  then show ?thesis using set_symbvar_global_level_keep using Global assms by simp
-next
-  case Program
-  hence "get_var_level_by_name (set_cur_symbvar st name val) name = get_var_level_by_name (set_cur_prog_var st name (stacked_var_init.Symbolic val None)) name" using assms by auto
-  then show ?thesis using set_symbvar_program_level_keep using Program assms by simp
-next
-  case Process
-  hence "get_var_level_by_name (set_cur_symbvar st name val) name = get_var_level_by_name (set_cur_proc_var st name (stacked_var_init.Symbolic val None)) name" using assms by auto
-  then show ?thesis using set_symbvar_process_level_keep using Process assms by simp
-qed
-
-lemma global_var_mirror[simp]:
-  assumes "get_var_level_by_name st name = var_level.Global"
-  shows "(get_cur_var_init_by_name (set_global_var st name val) name) = val"
-proof -
-  from assms have 
-   "(get_cur_var_init_by_name (set_global_var st name val) name) = 
-    (get_var_from_global_vars_by_name (get_global_vars 
-      (set_global_var st name val)) 
-    name)" using set_symbvar_global_level_keep by auto
-  hence
-    "(get_cur_var_init_by_name (set_global_var st name val) name) =
-     (get_var_from_global_vars_by_name (get_global_vars 
-      (set_global_vars st (set_var_in_global_vars_by_name (get_global_vars st) name val))) 
-      name)" by simp
-  hence
-    "(get_cur_var_init_by_name (set_global_var st name val) name) =
-     (get_var_from_global_vars_by_name (set_var_in_global_vars_by_name (get_global_vars st) 
-      name val) name)" using global_vars_mirror1 by simp
-  thus ?thesis using global_vars_mirror2 by simp
-qed
-
-lemma program_var_mirror[simp]:
-  assumes "get_var_level_by_name st name = var_level.Program"
-  shows "(get_cur_var_init_by_name (set_cur_prog_var st name val) name) = val"
-proof -
-  from assms have
-  "(get_cur_var_init_by_name (set_cur_prog_var st name val) name) =
-    (get_prog_var_by_name (get_cur_prog_vars 
-    (set_cur_prog_var st name val)) 
-    name)" using set_symbvar_program_level_keep by auto
-  hence "(get_cur_var_init_by_name (set_cur_prog_var st name val) name) =
-          (get_prog_var_by_name (get_cur_prog_vars
-          (set_cur_prog_vars st (set_var_in_prog_vars_by_name (get_cur_prog_vars st) name val))) 
-          name)" by simp
-  hence "(get_cur_var_init_by_name (set_cur_prog_var st name val) name) =
-          (get_prog_var_by_name (set_var_in_prog_vars_by_name (get_cur_prog_vars st) name val)
-          name)" using prog_vars_mirror1 by simp
-  thus ?thesis using prog_vars_mirror2 by simp
-qed
-
-lemma process_var_mirror[simp]:
-  assumes "get_var_level_by_name st name = var_level.Process"
-  shows "(get_cur_var_init_by_name (set_cur_proc_var st name val) name) = val"
-proof -
-  show ?thesis sorry
-qed
-
-lemma symbvar_mirror[simp]:
-  shows "get_cur_symbvar_by_name (set_cur_symbvar st name val) name = val"
-  
-proof (cases "(get_var_level_by_name st name)")
-  case g:Global
-  hence "get_cur_symbvar_by_name (set_cur_symbvar st name val) name = get_cur_symbvar_by_name (set_global_var st name (stacked_var_init.Symbolic val None)) name" by simp
-  from g and this show ?thesis using global_var_mirror by auto
-next
-  case p:Program
-  hence "get_cur_symbvar_by_name (set_cur_symbvar st name val) name = get_cur_symbvar_by_name (set_cur_prog_var st name (stacked_var_init.Symbolic val None)) name" by simp
-  from p and this show ?thesis using program_var_mirror by auto
-next
-  case p:Process
-  hence "get_cur_symbvar_by_name (set_cur_symbvar st name val) name = get_cur_symbvar_by_name (set_cur_proc_var st name (stacked_var_init.Symbolic val None)) name" by simp
-  from p and this show ?thesis using process_var_mirror by auto
-qed
-
-
-declare [[smt_timeout = 1000]]
-
-lemma
-  assumes assms: "st\<turnstile>expr.Const (const.Nat val) \<rightarrow> st_res"
-  shows "st_res = (set_value st (const_to_basic (const.Nat val)))"
-proof -
-  show ?thesis using assms by auto
-qed
-
-
-lemma nat_const_expr[simp]:
-  fixes st st_res :: model_context and name :: string and val :: nat
-  assumes assms: "st\<turnstile>expr.Const (const.Nat val) \<rightarrow> st_res" 
-  shows "(ptype.Nat val) =  (get_value st_res)"
-proof -
-  from assms have "st_res = (set_value st (const_to_basic (const.Nat val)))" using assms by auto
-  hence "get_value st_res = get_value (set_value st (const_to_basic (const.Nat val)))" by simp
-  hence "get_value st_res = (const_to_basic (const.Nat val))" using value_mirror by simp
-  thus ?thesis by simp 
-qed
-  
-(*st\<turnstile>exp\<rightarrow>st1;
-st2 = (set_cur_symbvar st1 var_name (get_value st1))*)
-
-lemma
-  fixes st st_res :: model_context and name :: string and val :: nat
-  assumes assms: "st\<turnstile>stmt.AssignSt (common_var.Symbolic name) (expr.Const (const.Nat val)) \<longrightarrow> st_res" 
-  shows "ptype_eq (get_cur_symbvar_by_name st_res name) (ptype.Nat val)"
-proof -
-  from assms obtain st1 where
-    c1: "st\<turnstile>(expr.Const (const.Nat val))\<rightarrow>st1" and
-    c2: "st_res = (set_cur_symbvar st1 name (get_value st1))" 
-  by (smt (z3) common_var.distinct(1) common_var.inject(1) exec.simps stmt.distinct(11) stmt.distinct(13) stmt.distinct(15) stmt.distinct(17) stmt.distinct(19) stmt.distinct(3) stmt.distinct(5) stmt.distinct(7) stmt.distinct(9) stmt.inject(1))
-  from c1 have "(ptype.Nat val) =  (get_value st1)" by simp
-  from c2 and this have "st_res = (set_cur_symbvar st1 name (ptype.Nat val))" by simp
-  then have "(get_cur_symbvar_by_name st_res name) = (get_cur_symbvar_by_name (set_cur_symbvar st1 name (ptype.Nat val)) name)" by simp
-  then have "(get_cur_symbvar_by_name st_res name) = (ptype.Nat val)" using symbvar_mirror by simp
-  then show "?thesis" using basic_eq by simp
-qed
 
 
 end

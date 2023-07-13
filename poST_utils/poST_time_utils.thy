@@ -2,6 +2,9 @@ theory poST_time_utils
   imports "~~/poST/poST_model/poST_time"
 begin
 
+definition time_to_nat ::"time \<Rightarrow> nat" where
+"time_to_nat t = (MS t) + 60 * ((S t) + 60 * ((M t) + 60 * ((H t) + 24 * (D t))))"
+
 definition nat_to_time :: "nat \<Rightarrow> time" where
 "nat_to_time var = 
   (let miliseconds = (var mod 1000);
@@ -55,6 +58,8 @@ fun time_sub :: "time \<Rightarrow> time \<Rightarrow> time" where
           then Time 0 0 0 0 0 
           else Time (nat resd) (nat resh) (nat resm) (nat ress) (nat resms)))"
 *)
+fun time_sub :: "time \<Rightarrow> time \<Rightarrow> time" where
+"time_sub t1 t2 = nat_to_time ((time_to_nat t1) - (time_to_nat t2))"
 
 definition time_eq :: "time \<Rightarrow> time \<Rightarrow>bool" where
 "time_eq t1 t2 = 

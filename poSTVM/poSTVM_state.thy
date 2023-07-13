@@ -1,8 +1,8 @@
-theory poSTVM_state_alt
+theory poSTVM_state
   imports 
     "~~/poST/poST_model/poST_model"
     "~~/poST/poST_utils/poST_vars_utils"
-    "~~/poST/poSTVM/poSTVM_parser_alt"
+    "~~/poST/poSTVM/poSTVM_parser"
 begin 
 
 type_synonym current_time = "time"
@@ -22,8 +22,12 @@ type_synonym program_context ="stacked_prog_vars *
 
 text "Model state in form of global vars, programs map, current program, function blocks list, functions list, last value"
 type_synonym model_context =
-"stacked_global_vars * ((program_name,program_context) fmap) *
-program_name * stacked_func_blocks * stacked_funcs * ptype"
+"stacked_global_vars * 
+((program_name,program_context) fmap) *
+program_name * 
+stacked_func_blocks * 
+stacked_funcs * 
+ptype"
 
 datatype var_level = Global | Program | Process
 
@@ -217,7 +221,7 @@ definition set_cur_symbvar_in_proc_vars :: "(stacked_proc_vars) \<Rightarrow>  s
   | (stacked_proc_var.InVar var) \<Rightarrow> (fmupd name (stacked_proc_var.InVar val) vars)
   | (stacked_proc_var.OutVar var) \<Rightarrow> (fmupd name (stacked_proc_var.OutVar val) vars))"
 declare set_cur_symbvar_in_proc_vars_def [simp]
-
+(*
 text "Setting symbolic var in current process in model state"
 definition set_cur_proc_var :: "model_context \<Rightarrow> symbolic_var \<Rightarrow> stacked_var_init \<Rightarrow> model_context" where
 "set_cur_proc_var st var_name val = 
@@ -239,6 +243,34 @@ definition set_cur_proc_var :: "model_context \<Rightarrow> symbolic_var \<Right
          f2,
          value))"
 declare set_cur_proc_var_def [simp]
+*)
+
+text "Setting program vars in current program context"
+definition set_cur_proc_vars :: "model_context \<Rightarrow> stacked_proc_vars \<Rightarrow> model_context" where
+"set_cur_proc_vars st vars = 
+(let (global_vars, pg_map, pg_name, f1, f2, v) = st; 
+     (pg_vars,pc_map,pc_name) = the (fmlookup pg_map pg_name);
+     (pc_vars,v1,v2,v3,v4,v5) = the (fmlookup pc_map pc_name)
+in (global_vars, (fmupd pg_name (pg_vars,(fmupd pc_name (vars,v1,v2,v3,v4,v5) pc_map),pc_name) pg_map), pg_name, f1, f2, v))"
+declare set_cur_proc_vars_def [simp]
+
+text "Setting symbolic var in global vars"
+definition set_var_in_proc_vars_by_name :: "stacked_proc_vars \<Rightarrow> symbolic_var \<Rightarrow> stacked_var_init \<Rightarrow> stacked_proc_vars" where
+"set_var_in_proc_vars_by_name vars name val= 
+  (case the (fmlookup vars name) of
+    stacked_proc_var.Var var \<Rightarrow> (fmupd name (stacked_proc_var.Var val) vars)
+  | stacked_proc_var.InOutVar var \<Rightarrow> (fmupd name (stacked_proc_var.InOutVar val) vars)
+  | stacked_proc_var.InVar var \<Rightarrow> (fmupd name (stacked_proc_var.InVar val) vars)
+  | stacked_proc_var.OutVar var \<Rightarrow> (fmupd name (stacked_proc_var.OutVar val) vars)
+  | stacked_proc_var.ProcessVar var \<Rightarrow> (fmupd name (stacked_proc_var.ProcessVar [])vars))"
+declare set_var_in_proc_vars_by_name_def [simp]
+
+(*(set_global_vars st (set_var_in_global_vars_by_name (get_global_vars st) var_name val))*)
+text "Setting symbolic var in current program in model state"
+definition set_cur_proc_var :: "model_context \<Rightarrow> symbolic_var \<Rightarrow> stacked_var_init \<Rightarrow> model_context" where
+"set_cur_proc_var st var_name val =
+  (set_cur_proc_vars st (set_var_in_proc_vars_by_name (get_cur_proc_vars st) var_name val))"
+declare set_cur_proc_var_def[simp]
 
 text "Setting symbolic var in program vars"
 definition set_cur_symbvar_in_prog_vars :: "stacked_prog_vars \<Rightarrow> symbolic_var \<Rightarrow> stacked_var_init \<Rightarrow> stacked_prog_vars" where

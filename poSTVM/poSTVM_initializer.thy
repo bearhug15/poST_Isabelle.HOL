@@ -1,5 +1,5 @@
 theory poSTVM_initializer
-  imports poSTVM_state_alt
+  imports poSTVM_state
 begin
 
 fun exec_sev_expr :: "nat \<Rightarrow> expr_stack \<Rightarrow> model_context \<Rightarrow> (ptype option) list" where

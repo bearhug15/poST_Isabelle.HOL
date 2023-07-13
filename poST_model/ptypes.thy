@@ -15,7 +15,9 @@ Dword dword |
 Lword lword |
 String string |
 Wstring wstring |
-Time time
+Time time |
+Exit |
+Return
 
 datatype const = 
 Nat nat |

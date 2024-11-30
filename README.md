@@ -1,4 +1,4 @@
-# poST_Isabelle.HOL
+# Isabelle/HOL poST model 
 
 ## Overview
 
